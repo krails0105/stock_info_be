@@ -32,34 +32,13 @@ public class SectorService {
     return Arrays.asList(
         new NewsDto(
             "AAPL",
-            "Apple Inc.",
-            "Apple Inc. is a technology company that develops and sells smartphones, tablets, and computers.",
-            "Apple Inc. is a technology company that develops and sells smartphones, tablets, and computers.",
-            "Apple Inc.",
-            "2024-01-01",
-            "https://www.apple.com",
-            "AAPL",
-            "https://www.apple.com/newsroom/images/product/iphone/standard/Apple_iPhone_15_Pro_iPhone-15-Pro-Max_09122024_big.jpg"),
+            "Apple Inc. is a technology company that develops and sells smartphones, tablets, and computers."),
         new NewsDto(
             "GOOG",
-            "Alphabet Inc.",
-            "Alphabet Inc. is a technology company that develops and sells search engines, online advertising, and cloud computing services.",
-            "Alphabet Inc. is a technology company that develops and sells search engines, online advertising, and cloud computing services.",
-            "Alphabet Inc.",
-            "2024-01-01",
-            "https://www.google.com",
-            "GOOG",
-            "https://www.google.com/newsroom/images/product/google-cloud/standard/Google-Cloud-Logo_Color_2020.jpg"),
+            "Alphabet Inc. is a technology company that develops and sells search engines, online advertising, and cloud computing services."),
         new NewsDto(
             "MSFT",
-            "Microsoft Corporation",
-            "Microsoft Corporation is a technology company that develops and sells software, online services, and devices.",
-            "Microsoft Corporation is a technology company that develops and sells software, online services, and devices.",
-            "Microsoft Corporation",
-            "2024-01-01",
-            "https://www.microsoft.com",
-            "MSFT",
-            "https://www.microsoft.com/newsroom/images/product/windows/standard/Windows-Logo_Color_2020.jpg"));
+            "Microsoft Corporation is a technology company that develops and sells software, online services, and devices."));
   }
 
   public List<NewsDto> getNewsBySector(String sector) {
@@ -67,33 +46,12 @@ public class SectorService {
     return Arrays.asList(
         new NewsDto(
             "AAPL",
-            "Apple Inc.",
-            "Apple Inc. is a technology company that develops and sells smartphones, tablets, and computers.",
-            "Apple Inc. is a technology company that develops and sells smartphones, tablets, and computers.",
-            "Apple Inc.",
-            "2024-01-01",
-            "https://www.apple.com",
-            "AAPL",
-            "https://www.apple.com/newsroom/images/product/iphone/standard/Apple_iPhone_15_Pro_iPhone-15-Pro-Max_09122024_big.jpg"),
+            "Apple Inc. is a technology company that develops and sells smartphones, tablets, and computers."),
         new NewsDto(
             "GOOG",
-            "Alphabet Inc.",
-            "Alphabet Inc. is a technology company that develops and sells search engines, online advertising, and cloud computing services.",
-            "Alphabet Inc. is a technology company that develops and sells search engines, online advertising, and cloud computing services.",
-            "Alphabet Inc.",
-            "2024-01-01",
-            "https://www.google.com",
-            "GOOG",
-            "https://www.google.com/newsroom/images/product/google-cloud/standard/Google-Cloud-Logo_Color_2020.jpg"),
+            "Alphabet Inc. is a technology company that develops and sells search engines, online advertising, and cloud computing services."),
         new NewsDto(
             "MSFT",
-            "Microsoft Corporation",
-            "Microsoft Corporation is a technology company that develops and sells software, online services, and devices.",
-            "Microsoft Corporation is a technology company that develops and sells software, online services, and devices.",
-            "Microsoft Corporation",
-            "2024-01-01",
-            "https://www.microsoft.com",
-            "MSFT",
-            "https://www.microsoft.com/newsroom/images/product/windows/standard/Windows-Logo_Color_2020.jpg"));
+            "Microsoft Corporation is a technology company that develops and sells software, online services, and devices."));
   }
 }

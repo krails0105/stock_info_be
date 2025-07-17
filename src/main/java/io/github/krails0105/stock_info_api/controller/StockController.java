@@ -1,5 +1,6 @@
 package io.github.krails0105.stock_info_api.controller;
 
+import io.github.krails0105.stock_info_api.dto.StockDetailDto;
 import io.github.krails0105.stock_info_api.dto.StockDto;
 import io.github.krails0105.stock_info_api.service.StockService;
 import java.util.List;
@@ -13,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/stocks")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @Slf4j
 public class StockController {
@@ -21,7 +22,7 @@ public class StockController {
   private final StockService stockService;
 
   // 여러 종목 조회 (List 사용)
-  @GetMapping
+  @GetMapping("/stocks")
   public List<StockDto> getStocks(
       @RequestParam(required = false) String sector,
       @RequestParam(required = false) String sortBy,
@@ -32,10 +33,10 @@ public class StockController {
   }
 
   // 단일 종목 조회 (ResponseEntity 사용)
-  @GetMapping("/{code}")
-  public ResponseEntity<StockDto> getStock(@PathVariable String code) {
+  @GetMapping("/stock/{code}")
+  public ResponseEntity<StockDetailDto> getStock(@PathVariable String code) {
     log.info("Request to get stock with code: {}", code);
-    StockDto stock = stockService.getStock(code);
+    StockDetailDto stock = stockService.getStock(code);
     if (stock != null) {
       return ResponseEntity.ok(stock);
     } else {
