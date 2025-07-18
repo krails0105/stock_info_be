@@ -81,6 +81,11 @@ public class StockService {
     if (sector == null) {
       return STOCK_DATA.values().stream().flatMap(List::stream).collect(Collectors.toList());
     }
+    log.info("Getting stock data for sector: {}", sector);
+    if (!STOCK_DATA.containsKey(sector)) {
+      log.info("Sector not found: {}", sector);
+      return List.of();
+    }
     return STOCK_DATA.get(sector);
   }
 }
