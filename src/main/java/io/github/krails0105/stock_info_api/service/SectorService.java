@@ -1,57 +1,81 @@
 package io.github.krails0105.stock_info_api.service;
 
-import io.github.krails0105.stock_info_api.dto.NewsDto;
-import io.github.krails0105.stock_info_api.dto.SectorDto;
-import java.util.Arrays;
+import io.github.krails0105.stock_info_api.dto.HotSectorDto;
+import io.github.krails0105.stock_info_api.dto.MarketSummaryDto;
+import io.github.krails0105.stock_info_api.dto.ScoreLabel;
+import io.github.krails0105.stock_info_api.dto.ScoreboardResponse;
+import io.github.krails0105.stock_info_api.dto.SectorScoreDto;
+import io.github.krails0105.stock_info_api.provider.SectorDataProvider;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class SectorService {
 
-  public List<SectorDto> getSectors() {
-    log.info("Getting sectors information");
+  private final SectorDataProvider sectorDataProvider;
 
-    // 임시 데이터 반환 (관심도 순으로 정렬된 섹터 리스트)
-    return Arrays.asList(
-        new SectorDto("tech", "기술주", "반도체, IT, 소프트웨어 관련 기업", 95, 150, "15.2", "1.8"),
-        new SectorDto("bio", "바이오", "제약, 바이오테크놀로지 관련 기업", 90, 85, "25.4", "2.1"),
-        new SectorDto("finance", "금융", "은행, 증권, 보험 관련 기업", 85, 120, "8.5", "0.6"),
-        new SectorDto("energy", "에너지", "석유, 가스, 신재생에너지 관련 기업", 80, 95, "12.3", "1.2"),
-        new SectorDto("consumer", "소비재", "식품, 의류, 생활용품 관련 기업", 75, 110, "18.7", "1.5"),
-        new SectorDto("automotive", "자동차", "완성차, 부품, 전기차 관련 기업", 70, 80, "11.8", "0.9"));
+  public ScoreboardResponse getScoreboard() {
+    List<SectorScoreDto> allSectors = sectorDataProvider.getAllSectors();
+
+    // 점수 기준 정렬
+    List<SectorScoreDto> sortedSectors =
+        allSectors.stream()
+            .sorted(Comparator.comparingInt(SectorScoreDto::getScore).reversed())
+            .toList();
+
+    // Hot Sectors TOP 3
+    List<HotSectorDto> hotSectors = sortedSectors.stream().limit(3).map(this::toHotSector).toList();
+
+    // 시장 요약 계산
+    MarketSummaryDto marketSummary = calculateMarketSummary(allSectors);
+
+    return ScoreboardResponse.builder()
+        .asOf(OffsetDateTime.now(ZoneId.of("Asia/Seoul")))
+        .marketSummary(marketSummary)
+        .hotSectors(hotSectors)
+        .sectors(sortedSectors)
+        .build();
   }
 
-  public List<NewsDto> getNews() {
-    log.info("Getting all news");
-
-    return Arrays.asList(
-        new NewsDto(
-            "AAPL",
-            "Apple Inc. is a technology company that develops and sells smartphones, tablets, and computers."),
-        new NewsDto(
-            "GOOG",
-            "Alphabet Inc. is a technology company that develops and sells search engines, online advertising, and cloud computing services."),
-        new NewsDto(
-            "MSFT",
-            "Microsoft Corporation is a technology company that develops and sells software, online services, and devices."));
+  public List<SectorScoreDto> getAllSectors() {
+    return sectorDataProvider.getAllSectors().stream()
+        .sorted(Comparator.comparingInt(SectorScoreDto::getScore).reversed())
+        .toList();
   }
 
-  public List<NewsDto> getNewsBySector(String sector) {
-    log.info("Getting news by sector: {}", sector);
-    return Arrays.asList(
-        new NewsDto(
-            "AAPL",
-            "Apple Inc. is a technology company that develops and sells smartphones, tablets, and computers."),
-        new NewsDto(
-            "GOOG",
-            "Alphabet Inc. is a technology company that develops and sells search engines, online advertising, and cloud computing services."),
-        new NewsDto(
-            "MSFT",
-            "Microsoft Corporation is a technology company that develops and sells software, online services, and devices."));
+  public SectorScoreDto getSectorById(String sectorId) {
+    return sectorDataProvider.getSectorById(sectorId);
+  }
+
+  private HotSectorDto toHotSector(SectorScoreDto sector) {
+    return HotSectorDto.builder()
+        .sectorId(sector.getSectorId())
+        .sectorName(sector.getSectorName())
+        .score(sector.getScore())
+        .label(sector.getLabel())
+        .reasons(sector.getReasons())
+        .build();
+  }
+
+  private MarketSummaryDto calculateMarketSummary(List<SectorScoreDto> sectors) {
+    double avgScore = sectors.stream().mapToInt(SectorScoreDto::getScore).average().orElse(50);
+
+    ScoreLabel label = ScoreLabel.fromScore((int) avgScore);
+    String oneLiner = generateOneLiner(label, avgScore);
+
+    return MarketSummaryDto.builder().label(label).oneLiner(oneLiner).build();
+  }
+
+  private String generateOneLiner(ScoreLabel label, double avgScore) {
+    return switch (label) {
+      case STRONG -> String.format("오늘 시장: 강세 (평균 점수 %.0f점)", avgScore);
+      case NEUTRAL -> String.format("오늘 시장: 중립 (변동성 보통)", avgScore);
+      case WEAK -> String.format("오늘 시장: 약세 (신중한 접근 필요)", avgScore);
+    };
   }
 }

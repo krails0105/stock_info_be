@@ -1,7 +1,7 @@
 package io.github.krails0105.stock_info_api.controller;
 
-import io.github.krails0105.stock_info_api.dto.StockDetailDto;
-import io.github.krails0105.stock_info_api.dto.StockDto;
+import io.github.krails0105.stock_info_api.dto.StockListResponse;
+import io.github.krails0105.stock_info_api.dto.StockScoreDto;
 import io.github.krails0105.stock_info_api.service.StockService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -14,39 +14,46 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/stocks")
 @RequiredArgsConstructor
 @Slf4j
 public class StockController {
 
   private final StockService stockService;
 
-  // 여러 종목 조회 (List 사용)
-  @GetMapping("/stocks")
-  public List<StockDto> getStocks(
-      @RequestParam(required = false) String sector,
-      @RequestParam(required = false) String sortBy,
-      @RequestParam(required = false) String sortOrder) {
-    log.info(
-        "Request to get stocks - sector: {}, sortBy: {}, sortOrder: {}", sector, sortBy, sortOrder);
-    return stockService.getStocks(sector, sortBy, sortOrder);
-  }
-
-  // 단일 종목 조회 (ResponseEntity 사용)
-  @GetMapping("/stock/{code}")
-  public ResponseEntity<StockDetailDto> getStock(@PathVariable String code) {
-    log.info("Request to get stock with code: {}", code);
-    StockDetailDto stock = stockService.getStock(code);
-    if (stock != null) {
-      return ResponseEntity.ok(stock);
-    } else {
+  /** 섹터별 종목 리스트 (점수순 정렬) */
+  @GetMapping("/sector/{sectorId}")
+  public ResponseEntity<StockListResponse> getStocksBySector(@PathVariable String sectorId) {
+    log.info("Request to get stocks by sector: {}", sectorId);
+    StockListResponse response = stockService.getStocksBySector(sectorId);
+    if (response == null) {
       return ResponseEntity.notFound().build();
     }
+    return ResponseEntity.ok(response);
   }
 
+  /** 종목 상세 조회 */
+  @GetMapping("/{code}")
+  public ResponseEntity<StockScoreDto> getStockByCode(@PathVariable String code) {
+    log.info("Request to get stock: {}", code);
+    StockScoreDto stock = stockService.getStockByCode(code);
+    if (stock == null) {
+      return ResponseEntity.notFound().build();
+    }
+    return ResponseEntity.ok(stock);
+  }
+
+  /** 종목 검색 */
   @GetMapping("/search")
-  public List<StockDto> searchStocks(@RequestParam String keyword) {
-    log.info("Request to search stocks with keyword: {}", keyword);
+  public List<StockScoreDto> searchStocks(@RequestParam String keyword) {
+    log.info("Request to search stocks: {}", keyword);
     return stockService.searchStocks(keyword);
+  }
+
+  /** 전체 상위 종목 (점수순) */
+  @GetMapping("/top")
+  public List<StockScoreDto> getTopStocks(@RequestParam(defaultValue = "10") int limit) {
+    log.info("Request to get top {} stocks", limit);
+    return stockService.getTopStocks(limit);
   }
 }
