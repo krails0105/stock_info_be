@@ -2,13 +2,17 @@ package io.github.krails0105.stock_info_api.provider;
 
 import io.github.krails0105.stock_info_api.dto.ScoreLabel;
 import io.github.krails0105.stock_info_api.dto.SectorScoreDto;
+import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
+import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockResponse.KrxStockItem;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("local")
 public class MockSectorDataProvider implements SectorDataProvider {
 
   private final Map<String, SectorScoreDto> sectorMap;
@@ -97,7 +101,13 @@ public class MockSectorDataProvider implements SectorDataProvider {
   }
 
   @Override
-  public SectorScoreDto getSectorById(String sectorId) {
-    return sectorMap.get(sectorId);
+  public List<StockInfo> getStocksBySectorId(String sectorId) {
+    // Mock: 빈 리스트 반환 (실제 데이터는 KrxSectorDataProviderImpl에서 제공)
+    return List.of();
+  }
+
+  @Override
+  public List<KrxStockItem> getStocksBySectorName(String sectorId) {
+    return List.of();
   }
 }

@@ -46,6 +46,32 @@ Controller → Service → Provider (Data Access) → DTO
 - `StockScoreDto` / `SectorScoreDto`: Core entities with scores (0-100) and labels (STRONG/NEUTRAL/WEAK)
 - `ScoreboardResponse`: Main dashboard response with market summary and hot sectors
 
+### DTO Layer Separation
+
+DTO는 역할에 따라 3가지로 분리:
+
+```
+External API/DB → Provider → Service → Controller → Client
+       ↓              ↓          ↓           ↓
+  External DTO    Domain DTO   Domain    Response DTO
+```
+
+| DTO 종류 | 위치 | 역할 |
+|---------|------|------|
+| **External DTO** | `dto/external/` | 외부 API 응답 매핑 (KRX, KIS) |
+| **Domain DTO** | `dto/domain/` | 내부 비즈니스 로직용 표준 형식 |
+| **Response DTO** | `dto/response/` | 클라이언트 응답용 (가공된 데이터) |
+
+**변환 규칙:**
+- Provider: External DTO → Domain DTO 변환
+- Service: Domain DTO만 반환 (표현 계층 의존 X)
+- Controller: Domain DTO → Response DTO 변환
+
+**주요 DTO:**
+- `StockInfo` (Domain): 주식 기본 정보 (code, name, price, changeRate, per, pbr, market, sectorName 등)
+- `StockResponse` (Response): API 응답용 (score, label, reasons 등 분석 정보 포함)
+- `KrxStockItem` / `KrxStockFinancialItem` (External): KRX API 응답 매핑
+
 ### Scoring System
 
 Stocks and sectors use a 0-100 score system:

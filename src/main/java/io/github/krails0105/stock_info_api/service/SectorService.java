@@ -5,6 +5,9 @@ import io.github.krails0105.stock_info_api.dto.MarketSummaryDto;
 import io.github.krails0105.stock_info_api.dto.ScoreLabel;
 import io.github.krails0105.stock_info_api.dto.ScoreboardResponse;
 import io.github.krails0105.stock_info_api.dto.SectorScoreDto;
+import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
+import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockResponse.KrxStockItem;
+import io.github.krails0105.stock_info_api.dto.response.StockListItem;
 import io.github.krails0105.stock_info_api.provider.SectorDataProvider;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -48,8 +51,45 @@ public class SectorService {
         .toList();
   }
 
-  public SectorScoreDto getSectorById(String sectorId) {
-    return sectorDataProvider.getSectorById(sectorId);
+  /** 특정 섹터(업종)에 속한 종목 목록 조회 - Domain DTO 반환 */
+  public List<StockInfo> getStocksBySectorId(String sectorId) {
+    return sectorDataProvider.getStocksBySectorId(sectorId);
+  }
+
+  /**
+   * 섹터별 종목 목록 조회
+   *
+   * @param sectorName 업종명 (예: "전기전자", "바이오")
+   * @return 해당 업종에 속한 종목 목록 (StockListItem으로 변환)
+   */
+  public List<StockListItem> getStocksBySectorName(String sectorName) {
+    List<KrxStockItem> krxStocks = sectorDataProvider.getStocksBySectorName(sectorName);
+    return krxStocks.stream().map(this::toStockListItem).toList();
+  }
+
+  /** KrxStockItem → StockListItem 변환 */
+  private StockListItem toStockListItem(KrxStockItem item) {
+    int score = calculateStockScore(item.getChangeRate());
+    return StockListItem.builder()
+        .code(item.getStockCode())
+        .name(item.getStockName())
+        .score(score)
+        .label(ScoreLabel.fromScore(score))
+        .price(item.getClosingPrice())
+        .changeRate(String.format("%+.2f%%", item.getChangeRate()))
+        .market(item.getMarketType())
+        .sectorName(item.getSectorName())
+        .build();
+  }
+
+  /**
+   * 주식 점수 계산 (등락률 기반)
+   *
+   * <p>-5% ~ +5% 범위를 0~100점으로 매핑
+   */
+  private int calculateStockScore(double changeRate) {
+    int score = (int) ((changeRate + 5) * 10);
+    return Math.max(0, Math.min(100, score));
   }
 
   private HotSectorDto toHotSector(SectorScoreDto sector) {

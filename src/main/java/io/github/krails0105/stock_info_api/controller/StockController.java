@@ -2,6 +2,7 @@ package io.github.krails0105.stock_info_api.controller;
 
 import io.github.krails0105.stock_info_api.dto.StockListResponse;
 import io.github.krails0105.stock_info_api.dto.StockScoreDto;
+import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockFinancialResponse.KrxStockFinancialItem;
 import io.github.krails0105.stock_info_api.service.StockService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -32,11 +33,22 @@ public class StockController {
     return ResponseEntity.ok(response);
   }
 
+//  /** 종목 상세 조회 */
+//  @GetMapping("/{code}")
+//  public ResponseEntity<StockScoreDto> getStockByCode(@PathVariable String code) {
+//    log.info("Request to get stock: {}", code);
+//    StockScoreDto stock = stockService.getStockByCode(code);
+//    if (stock == null) {
+//      return ResponseEntity.notFound().build();
+//    }
+//    return ResponseEntity.ok(stock);
+//  }
+
   /** 종목 상세 조회 */
-  @GetMapping("/{code}")
-  public ResponseEntity<StockScoreDto> getStockByCode(@PathVariable String code) {
-    log.info("Request to get stock: {}", code);
-    StockScoreDto stock = stockService.getStockByCode(code);
+  @GetMapping("/{id}")
+  public ResponseEntity<KrxStockFinancialItem> getStockById(@PathVariable String id) {
+    log.info("Request to get stock: {}", id);
+    KrxStockFinancialItem stock = stockService.getStockById(id);
     if (stock == null) {
       return ResponseEntity.notFound().build();
     }
