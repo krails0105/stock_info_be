@@ -2,15 +2,19 @@ package io.github.krails0105.stock_info_api.provider;
 
 import io.github.krails0105.stock_info_api.dto.ScoreLabel;
 import io.github.krails0105.stock_info_api.dto.StockScoreDto;
+import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
+import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockFinancialResponse.KrxStockFinancialItem;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("local")
 public class MockStockDataProvider implements StockDataProvider {
 
   private final Map<String, StockScoreDto> stockMap;
@@ -239,6 +243,17 @@ public class MockStockDataProvider implements StockDataProvider {
             .build());
 
     return stocks;
+  }
+
+  @Override
+  public List<StockInfo> getAllStocks() {
+    return List.of();
+  }
+
+  @Override
+  public KrxStockFinancialItem getStocksByStockId(String stockId) {
+    // Mock: null 반환 (실제 데이터는 KrxStockDataProviderImpl에서 제공)
+    return null;
   }
 
   @Override
