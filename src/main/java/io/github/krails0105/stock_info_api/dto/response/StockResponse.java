@@ -1,9 +1,7 @@
 package io.github.krails0105.stock_info_api.dto.response;
 
 import io.github.krails0105.stock_info_api.dto.ScoreLabel;
-import io.github.krails0105.stock_info_api.dto.domain.Stock;
 import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
-import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockResponse.KrxStockItem;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
@@ -67,30 +65,6 @@ public class StockResponse {
   /** 분석 이유 (3줄) */
   private List<String> reasons;
 
-  /** Stock 도메인 객체에서 변환 (점수 정보 포함) */
-  public static StockResponse from(Stock stock, int score, List<String> reasons) {
-    ScoreLabel label = ScoreLabel.fromScore(score);
-
-    return StockResponse.builder()
-        .code(stock.getCode())
-        .name(stock.getName())
-        .price(stock.getPrice())
-        .changeRate(formatChangeRate(stock.getChangeRate()))
-        .market(stock.getMarket())
-        .sectorName(stock.getSectorName())
-        .marketCap(stock.getMarketCap())
-        .volume(stock.getVolume())
-        .per(stock.getPer())
-        .pbr(stock.getPbr())
-        .score(score)
-        .label(label)
-        .returnGrade(getReturnGrade(stock.getChangeRate()))
-        .valuationGrade(getValuationGrade(stock.getPer(), stock.getPbr()))
-        .volumeGrade("보통") // 기본값
-        .reasons(reasons)
-        .build();
-  }
-
   private static String formatChangeRate(double rate) {
     return String.format("%+.2f%%", rate);
   }
@@ -146,34 +120,5 @@ public class StockResponse {
         String.format("등락률 %+.2f%%", stockInfo.getChangeRate()),
         stockInfo.getPer() != null ? String.format("PER %.2f", stockInfo.getPer()) : "PER 정보없음",
         stockInfo.getPbr() != null ? String.format("PBR %.2f", stockInfo.getPbr()) : "PBR 정보없음");
-  }
-
-  /** KrxStockItem에서 변환 */
-  public static StockResponse fromKrxStockItem(KrxStockItem item) {
-    int score = calculateScore(item.getChangeRate());
-    ScoreLabel label = ScoreLabel.fromScore(score);
-
-    return StockResponse.builder()
-        .code(item.getStockCode())
-        .name(item.getStockName())
-        .price(item.getClosingPrice())
-        .changeRate(formatChangeRate(item.getChangeRate()))
-        .market(item.getMarketType())
-        .sectorName(item.getSectorName())
-        .marketCap(item.getMarketCap())
-        .volume(0L)
-        .per(null)
-        .pbr(null)
-        .score(score)
-        .label(label)
-        .returnGrade(getReturnGrade(item.getChangeRate()))
-        .valuationGrade("정보없음")
-        .volumeGrade("보통")
-        .reasons(
-            List.of(
-                String.format("등락률 %+.2f%%", item.getChangeRate()),
-                String.format("시가총액 %,d원", item.getMarketCap()),
-                String.format("업종: %s", item.getSectorName())))
-        .build();
   }
 }

@@ -33,17 +33,6 @@ public class StockController {
     return ResponseEntity.ok(response);
   }
 
-//  /** 종목 상세 조회 */
-//  @GetMapping("/{code}")
-//  public ResponseEntity<StockScoreDto> getStockByCode(@PathVariable String code) {
-//    log.info("Request to get stock: {}", code);
-//    StockScoreDto stock = stockService.getStockByCode(code);
-//    if (stock == null) {
-//      return ResponseEntity.notFound().build();
-//    }
-//    return ResponseEntity.ok(stock);
-//  }
-
   /** 종목 상세 조회 */
   @GetMapping("/{id}")
   public ResponseEntity<KrxStockFinancialItem> getStockById(@PathVariable String id) {

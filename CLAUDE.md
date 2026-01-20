@@ -40,6 +40,7 @@ Controller → Service → Provider (Data Access) → DTO
 **Providers** (`provider/`): Data access abstraction using Strategy pattern
 - `SectorDataProvider` / `StockDataProvider`: Interfaces for data sources
 - `MockSectorDataProvider` / `MockStockDataProvider`: Development implementations (`@Profile("local")`)
+- `KrxStockDataProviderImpl`: KRX API integration
 - `KisStockDataProviderImpl`: KIS API integration (in progress)
 
 **DTOs** (`dto/`): Data transfer objects with Lombok annotations
@@ -69,8 +70,21 @@ External API/DB → Provider → Service → Controller → Client
 
 **주요 DTO:**
 - `StockInfo` (Domain): 주식 기본 정보 (code, name, price, changeRate, per, pbr, market, sectorName 등)
-- `StockResponse` (Response): API 응답용 (score, label, reasons 등 분석 정보 포함)
+- `StockResponse` (Response): API 응답용 - `fromStockInfo()` 메서드로 변환
+- `StockListItem` (Response): 목록 조회용 간소화 DTO
 - `KrxStockItem` / `KrxStockFinancialItem` (External): KRX API 응답 매핑
+
+### Key Endpoints
+
+**SectorController:**
+- `GET /api/sectors` - 전체 섹터 목록 (점수순)
+- `GET /api/sectors/{sectorName}/stocks` - 섹터별 종목 목록
+
+**StockController:**
+- `GET /api/stocks/{id}` - 종목 상세 (KrxStockFinancialItem 반환)
+- `GET /api/stocks/sector/{sectorId}` - 섹터별 종목 리스트
+- `GET /api/stocks/search?keyword=` - 종목 검색
+- `GET /api/stocks/top?limit=` - 상위 종목
 
 ### Scoring System
 

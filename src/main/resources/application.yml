@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: stock-info-api
+  profiles:
+    active: prod
+    include: secret  # application-secret.yml 자동 로드 (git 제외됨)
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    io.github.krails0105.stock_info_api: DEBUG
+
+# RestClient 설정
+# 실제 인증 정보는 application-secret.yml에 작성 (git 제외)
+rest-client:
+  kis:
+    base-url: https://openapi.koreainvestment.com:9443
+    connect-timeout: 5000
+    read-timeout: 10000
+    # 아래 값들은 application-secret.yml에서 오버라이드됨
+    app-key: ${KIS_APP_KEY:}
+    app-secret: ${KIS_APP_SECRET:}
+    account-number: ${KIS_ACCOUNT_NUMBER:}
