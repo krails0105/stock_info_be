@@ -64,32 +64,10 @@ public class SectorService {
    */
   public List<StockListItem> getStocksBySectorName(String sectorName) {
     List<KrxStockItem> krxStocks = sectorDataProvider.getStocksBySectorName(sectorName);
-    return krxStocks.stream().map(this::toStockListItem).toList();
-  }
-
-  /** KrxStockItem → StockListItem 변환 */
-  private StockListItem toStockListItem(KrxStockItem item) {
-    int score = calculateStockScore(item.getChangeRate());
-    return StockListItem.builder()
-        .code(item.getStockCode())
-        .name(item.getStockName())
-        .score(score)
-        .label(ScoreLabel.fromScore(score))
-        .price(item.getClosingPrice())
-        .changeRate(String.format("%+.2f%%", item.getChangeRate()))
-        .market(item.getMarketType())
-        .sectorName(item.getSectorName())
-        .build();
-  }
-
-  /**
-   * 주식 점수 계산 (등락률 기반)
-   *
-   * <p>-5% ~ +5% 범위를 0~100점으로 매핑
-   */
-  private int calculateStockScore(double changeRate) {
-    int score = (int) ((changeRate + 5) * 10);
-    return Math.max(0, Math.min(100, score));
+    return krxStocks.stream()
+        .map(StockInfo::fromKrxStockItem)
+        .map(StockListItem::fromStockInfo)
+        .toList();
   }
 
   private HotSectorDto toHotSector(SectorScoreDto sector) {

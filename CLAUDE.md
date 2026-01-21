@@ -29,18 +29,21 @@ Controller → Service → Provider (Data Access) → DTO
 
 ### Key Components
 
-**Controllers** (`controller/`): REST endpoints for sectors and stocks
+**Controllers** (`controller/`): REST endpoints for sectors, stocks, and indexes
 - `SectorController`: `/api/sectors/**` - market summary, sector listings and details
 - `StockController`: `/api/stocks/**` - stock queries, search, and rankings
+- `IndexController`: `/api/indexes` - 시장 지수 조회 (코스피, 코스닥)
 
 **Services** (`service/`): Business logic layer
 - `SectorService`: Sector data orchestration, score-based sorting, market summary calculation
 - `StockService`: Stock queries, search, top rankings by score
+- `IndexService`: 지수 조회 (TARGET_INDEXES Set으로 필터링)
 
 **Providers** (`provider/`): Data access abstraction using Strategy pattern
-- `SectorDataProvider` / `StockDataProvider`: Interfaces for data sources
+- `SectorDataProvider` / `StockDataProvider` / `IndexDataProvider`: Interfaces for data sources
 - `MockSectorDataProvider` / `MockStockDataProvider`: Development implementations (`@Profile("local")`)
 - `KrxStockDataProviderImpl`: KRX API integration
+- `KrxIndexDataProviderImpl`: KRX 지수 API (INDEX_CODES Map으로 관리)
 - `KisStockDataProviderImpl`: KIS API integration (in progress)
 
 **DTOs** (`dto/`): Data transfer objects with Lombok annotations
@@ -69,10 +72,12 @@ External API/DB → Provider → Service → Controller → Client
 - Controller: Domain DTO → Response DTO 변환
 
 **주요 DTO:**
-- `StockInfo` (Domain): 주식 기본 정보 (code, name, price, changeRate, per, pbr, market, sectorName 등)
-- `StockResponse` (Response): API 응답용 - `fromStockInfo()` 메서드로 변환
-- `StockListItem` (Response): 목록 조회용 간소화 DTO
-- `KrxStockItem` / `KrxStockFinancialItem` (External): KRX API 응답 매핑
+- `StockInfo` (Domain): 주식 기본 정보 (code, name, price, priceChange, changeRate, per, pbr, market, sectorName, marketCap 등)
+- `Index` (Domain): 지수 정보 (name, closingPrice, priceChange, changeRate, openingPrice, highPrice, lowPrice 등)
+- `StockResponse` (Response): 상세 조회용 - `fromStockInfo()` 메서드로 변환
+- `StockListItem` (Response): 목록 조회용 - `fromStockInfo()` 메서드로 변환 (price, priceChange, changeRate, marketCap, per, pbr, score 등)
+- `IndexResponse` (Response): 지수 응답용 - `fromIndex()` 메서드로 변환 (changeRate 포맷팅, marketStatus 추가)
+- `KrxStockItem` / `KrxStockFinancialItem` / `KrxIndexResponse` (External): KRX API 응답 매핑
 
 ### Key Endpoints
 
@@ -85,6 +90,9 @@ External API/DB → Provider → Service → Controller → Client
 - `GET /api/stocks/sector/{sectorId}` - 섹터별 종목 리스트
 - `GET /api/stocks/search?keyword=` - 종목 검색
 - `GET /api/stocks/top?limit=` - 상위 종목
+
+**IndexController:**
+- `GET /api/indexes` - 시장 지수 조회 (코스피, 코스닥)
 
 ### Scoring System
 

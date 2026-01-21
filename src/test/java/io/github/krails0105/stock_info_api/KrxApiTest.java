@@ -106,4 +106,32 @@ class KrxApiTest {
       throw new RuntimeException("KRX 데이터 파싱 실패", e);
     }
   }
+
+  @Test
+  void testGetAllIndexes() {
+    RestClient restClient = RestClient.builder().build();
+
+    String code =
+        "CrXSsBNNRCu7sKFjyLfMv7ovbbaQu2MCFXZxvQUUmHYRtSksuLS7Bnxpl86F7dAOljmd3W5WSuvBZefxIBXis5aKeNlDwhhhErMpnuHql0qLt4WN28I81i+7KB+smpuTkmi2DsJVi7nd9V9czE0E2sIg8AtAjFopL5enDBGlMAotVU1yKYe5tbbTljkhZJ2UVmu7dxwt3VTOS253NhIUz6gmScDRQAumnWS+nVj25PQFLUVRogm6XveqXBqi9mWvXj/MGcl3zlhm1+3U+0XOY4pPgztr2I3IM5kl8ywGPaU=";
+
+    MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+    formData.add("code", code);
+
+    byte[] responseBytes =
+        restClient
+            .post()
+            .uri("https://data.krx.co.kr/comm/fileDn/download_csv/download.cmd")
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(formData)
+            .retrieve()
+            .body(byte[].class);
+
+    try {
+      String csvContent = new String(Objects.requireNonNull(responseBytes), "EUC-KR");
+      System.out.println("KRX API Response: " + csvContent);
+    } catch (Exception e) {
+      System.out.println("Failed to parse KRX response " + e);
+      throw new RuntimeException("KRX 데이터 파싱 실패", e);
+    }
+  }
 }
