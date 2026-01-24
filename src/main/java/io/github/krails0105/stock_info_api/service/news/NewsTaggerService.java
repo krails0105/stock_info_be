@@ -8,6 +8,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -77,6 +78,26 @@ public class NewsTaggerService {
   /** 신뢰할 수 있는 언론사 목록 (신선도 가산점용). */
   private static final List<String> TRUSTED_PUBLISHERS =
       List.of("연합뉴스", "한국경제", "매일경제", "조선비즈", "서울경제", "머니투데이", "뉴스1");
+
+  /** 6자리 주식 코드 패턴. */
+  private static final Pattern STOCK_CODE_PATTERN = Pattern.compile("\\b(\\d{6})\\b");
+
+  /** 섹터명 키워드 매핑 (KRX 업종명 기준). */
+  private static final Map<String, List<String>> SECTOR_KEYWORDS =
+      Map.ofEntries(
+          Map.entry("전기·전자", List.of("반도체", "메모리", "파운드리", "HBM", "D램", "낸드", "전자")),
+          Map.entry("운송장비·부품", List.of("자동차", "전기차", "EV", "완성차", "현대차", "기아")),
+          Map.entry("제약", List.of("바이오", "제약", "신약", "임상", "의약")),
+          Map.entry("은행", List.of("은행", "금융")),
+          Map.entry("증권", List.of("증권사", "자산운용")),
+          Map.entry("보험", List.of("보험")),
+          Map.entry("IT 서비스", List.of("AI", "인공지능", "소프트웨어", "클라우드", "플랫폼", "게임")),
+          Map.entry("전기·가스", List.of("에너지", "태양광", "풍력", "친환경", "2차전지", "배터리")),
+          Map.entry("화학", List.of("석유", "정유", "화학", "리튬", "양극재")),
+          Map.entry("기계·장비", List.of("조선업", "선박", "HD현대중공업", "한화오션", "기계")),
+          Map.entry("금속", List.of("철강", "포스코", "금속")),
+          Map.entry("통신", List.of("통신", "5G")),
+          Map.entry("유통", List.of("유통", "소비재", "화장품", "백화점", "이커머스")));
 
   /** 주요 종목명 → 종목코드 매핑 (시총 상위 종목 + 주요 관심 종목). */
   private static final Map<String, String> STOCK_NAME_CODE_MAP =
@@ -232,42 +253,13 @@ public class NewsTaggerService {
     }
 
     // 2. 6자리 숫자 패턴 찾기 (한국 주식 코드)
-    Pattern stockCodePattern = Pattern.compile("\\b(\\d{6})\\b");
-    java.util.regex.Matcher matcher = stockCodePattern.matcher(text);
+    Matcher matcher = STOCK_CODE_PATTERN.matcher(text);
     if (matcher.find()) {
       return matcher.group(1);
     }
 
     return null;
   }
-
-  /** 섹터명 키워드 매핑 (KRX 업종명 기준). */
-  private static final Map<String, List<String>> SECTOR_KEYWORDS =
-      Map.ofEntries(
-          // KRX: 전기·전자 (반도체 포함)
-          Map.entry("전기·전자", List.of("반도체", "메모리", "파운드리", "HBM", "D램", "낸드", "전자")),
-          // KRX: 운송장비·부품 (자동차 포함)
-          Map.entry("운송장비·부품", List.of("자동차", "전기차", "EV", "완성차", "현대차", "기아")),
-          // KRX: 제약
-          Map.entry("제약", List.of("바이오", "제약", "신약", "임상", "의약")),
-          // KRX: 은행, 증권, 보험 (금융 관련)
-          Map.entry("은행", List.of("은행", "금융")),
-          Map.entry("증권", List.of("증권사", "자산운용")),
-          Map.entry("보험", List.of("보험")),
-          // KRX: IT 서비스
-          Map.entry("IT 서비스", List.of("AI", "인공지능", "소프트웨어", "클라우드", "플랫폼", "게임")),
-          // KRX: 전기·가스 (에너지 포함)
-          Map.entry("전기·가스", List.of("에너지", "태양광", "풍력", "친환경", "2차전지", "배터리")),
-          // KRX: 화학
-          Map.entry("화학", List.of("석유", "정유", "화학", "리튬", "양극재")),
-          // KRX: 기계·장비 (조선 포함)
-          Map.entry("기계·장비", List.of("조선업", "선박", "HD현대중공업", "한화오션", "기계")),
-          // KRX: 금속 (철강 포함)
-          Map.entry("금속", List.of("철강", "포스코", "금속")),
-          // KRX: 통신
-          Map.entry("통신", List.of("통신", "5G")),
-          // KRX: 유통
-          Map.entry("유통", List.of("유통", "소비재", "화장품", "백화점", "이커머스")));
 
   /**
    * 섹터명 추출 (키워드 기반).

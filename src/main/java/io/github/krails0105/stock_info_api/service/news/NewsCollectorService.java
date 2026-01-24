@@ -8,8 +8,12 @@ import io.github.krails0105.stock_info_api.entity.RawNewsArticle;
 import io.github.krails0105.stock_info_api.entity.RawNewsArticle.ProcessingStatus;
 import io.github.krails0105.stock_info_api.repository.RawNewsArticleRepository;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +41,7 @@ public class NewsCollectorService {
   private static final List<RssFeedConfig> RSS_FEEDS = buildRssFeeds();
 
   private static List<RssFeedConfig> buildRssFeeds() {
-    List<RssFeedConfig> feeds = new java.util.ArrayList<>();
+    List<RssFeedConfig> feeds = new ArrayList<>();
 
     // 1. 일반 시장 뉴스 피드
     feeds.add(
@@ -105,11 +109,7 @@ public class NewsCollectorService {
   }
 
   private static String encodeQuery(String query) {
-    try {
-      return java.net.URLEncoder.encode(query, "UTF-8");
-    } catch (Exception e) {
-      return query;
-    }
+    return URLEncoder.encode(query, StandardCharsets.UTF_8);
   }
 
   /**
@@ -212,11 +212,7 @@ public class NewsCollectorService {
       if (endIdx == -1) {
         endIdx = url.length();
       }
-      try {
-        return java.net.URLDecoder.decode(url.substring(startIdx, endIdx), "UTF-8");
-      } catch (Exception e) {
-        // 디코딩 실패 시 원본 반환
-      }
+      return URLDecoder.decode(url.substring(startIdx, endIdx), StandardCharsets.UTF_8);
     }
     // 기본: 끝의 슬래시 제거
     return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
