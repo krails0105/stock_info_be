@@ -29,15 +29,88 @@ public class NewsCollectorService {
 
   private final RawNewsArticleRepository rawNewsRepository;
 
-  /** RSS 피드 목록 (실제 환경에서는 설정 파일/DB에서 로드 권장) */
-  private static final List<RssFeedConfig> RSS_FEEDS =
-      List.of(
+  /** Google News RSS 기본 URL */
+  private static final String GOOGLE_NEWS_RSS_BASE =
+      "https://news.google.com/rss/search?q=%s&hl=ko&gl=KR&ceid=KR:ko";
+
+  /** RSS 피드 목록 (일반 + 주요 종목별) */
+  private static final List<RssFeedConfig> RSS_FEEDS = buildRssFeeds();
+
+  private static List<RssFeedConfig> buildRssFeeds() {
+    List<RssFeedConfig> feeds = new java.util.ArrayList<>();
+
+    // 1. 일반 시장 뉴스 피드
+    feeds.add(
+        new RssFeedConfig(
+            "google-finance-kr",
+            String.format(GOOGLE_NEWS_RSS_BASE, encodeQuery("주식 OR 코스피 OR 코스닥"))));
+    feeds.add(
+        new RssFeedConfig(
+            "google-economy-kr", String.format(GOOGLE_NEWS_RSS_BASE, encodeQuery("경제 실적 배당"))));
+
+    // 2. 시총 상위 종목별 RSS 피드
+    List<String> topStocks =
+        List.of(
+            "삼성전자",
+            "SK하이닉스",
+            "LG에너지솔루션",
+            "삼성바이오로직스",
+            "현대차",
+            "기아",
+            "셀트리온",
+            "KB금융",
+            "신한지주",
+            "NAVER",
+            "카카오",
+            "포스코홀딩스",
+            "현대모비스",
+            "LG화학",
+            "삼성SDI",
+            "하나금융지주",
+            "삼성물산",
+            "LG전자",
+            "SK텔레콤",
+            "두산에너빌리티");
+
+    for (String stock : topStocks) {
+      feeds.add(
           new RssFeedConfig(
-              "google-finance-kr",
-              "https://news.google.com/rss/search?q=%EC%A3%BC%EC%8B%9D+OR+%EC%BD%94%EC%8A%A4%ED%94%BC+OR+%EC%BD%94%EC%8A%A4%EB%8B%A5&hl=ko&gl=KR&ceid=KR:ko"),
+              "stock-" + stock, String.format(GOOGLE_NEWS_RSS_BASE, encodeQuery(stock))));
+    }
+
+    // 3. 섹터/테마별 RSS 피드
+    List<String> sectors =
+        List.of(
+            "반도체",
+            "2차전지 배터리",
+            "전기차",
+            "바이오 제약",
+            "AI 인공지능",
+            "조선 해운",
+            "철강",
+            "금융 증권",
+            "게임주",
+            "엔터테인먼트",
+            "건설 부동산",
+            "통신 5G");
+
+    for (String sector : sectors) {
+      feeds.add(
           new RssFeedConfig(
-              "google-economy-kr",
-              "https://news.google.com/rss/search?q=%EA%B2%BD%EC%A0%9C+%EC%8B%A4%EC%A0%81+%EB%B0%B0%EB%8B%B9&hl=ko&gl=KR&ceid=KR:ko"));
+              "sector-" + sector.split(" ")[0],
+              String.format(GOOGLE_NEWS_RSS_BASE, encodeQuery(sector + " 주식"))));
+    }
+
+    return feeds;
+  }
+
+  private static String encodeQuery(String query) {
+    try {
+      return java.net.URLEncoder.encode(query, "UTF-8");
+    } catch (Exception e) {
+      return query;
+    }
+  }
 
   /**
    * 모든 설정된 RSS 피드에서 뉴스를 수집한다.
