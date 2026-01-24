@@ -78,6 +78,52 @@ public class NewsTaggerService {
   private static final List<String> TRUSTED_PUBLISHERS =
       List.of("연합뉴스", "한국경제", "매일경제", "조선비즈", "서울경제", "머니투데이", "뉴스1");
 
+  /** 주요 종목명 → 종목코드 매핑 (시총 상위 종목 + 주요 관심 종목). */
+  private static final Map<String, String> STOCK_NAME_CODE_MAP =
+      Map.ofEntries(
+          // 시총 상위 종목
+          Map.entry("삼성전자", "005930"),
+          Map.entry("SK하이닉스", "000660"),
+          Map.entry("하이닉스", "000660"),
+          Map.entry("LG에너지솔루션", "373220"),
+          Map.entry("삼성바이오로직스", "207940"),
+          Map.entry("삼성바이오", "207940"),
+          Map.entry("현대차", "005380"),
+          Map.entry("현대자동차", "005380"),
+          Map.entry("기아", "000270"),
+          Map.entry("셀트리온", "068270"),
+          Map.entry("KB금융", "105560"),
+          Map.entry("신한지주", "055550"),
+          Map.entry("NAVER", "035420"),
+          Map.entry("네이버", "035420"),
+          Map.entry("카카오", "035720"),
+          Map.entry("포스코홀딩스", "005490"),
+          Map.entry("포스코", "005490"),
+          Map.entry("현대모비스", "012330"),
+          Map.entry("LG화학", "051910"),
+          Map.entry("삼성SDI", "006400"),
+          Map.entry("SK이노베이션", "096770"),
+          Map.entry("삼성물산", "028260"),
+          Map.entry("하나금융지주", "086790"),
+          Map.entry("삼성생명", "032830"),
+          Map.entry("LG전자", "066570"),
+          Map.entry("SK텔레콤", "017670"),
+          Map.entry("KT", "030200"),
+          Map.entry("SK", "034730"),
+          Map.entry("두산에너빌리티", "034020"),
+          Map.entry("한화에어로스페이스", "012450"),
+          Map.entry("크래프톤", "259960"),
+          Map.entry("HD현대중공업", "329180"),
+          Map.entry("엔씨소프트", "036570"),
+          Map.entry("넷마블", "251270"),
+          Map.entry("카카오뱅크", "323410"),
+          Map.entry("SK바이오팜", "326030"),
+          Map.entry("LG생활건강", "051900"),
+          Map.entry("아모레퍼시픽", "090430"),
+          Map.entry("HLB", "028300"),
+          Map.entry("에코프로비엠", "247540"),
+          Map.entry("에코프로", "086520"));
+
   /**
    * 뉴스에 태그를 부여한다.
    *
@@ -165,21 +211,63 @@ public class NewsTaggerService {
   }
 
   /**
-   * 종목 코드 추출 (간단한 패턴 매칭).
+   * 종목 코드 추출 (종목명 매핑 + 6자리 숫자 패턴).
    *
    * @param article 원본 기사
    * @return 종목 코드 (없으면 null)
    */
   public String extractStockCode(RawNewsArticle article) {
-    // 간단한 구현: 6자리 숫자 패턴 찾기 (한국 주식 코드)
     String text = buildSearchText(article);
+
+    // 1. 종목명으로 찾기 (매핑 테이블 사용)
+    for (Map.Entry<String, String> entry : STOCK_NAME_CODE_MAP.entrySet()) {
+      if (text.contains(entry.getKey())) {
+        log.debug(
+            "Found stock {} ({}) in article: {}",
+            entry.getKey(),
+            entry.getValue(),
+            article.getTitle());
+        return entry.getValue();
+      }
+    }
+
+    // 2. 6자리 숫자 패턴 찾기 (한국 주식 코드)
     Pattern stockCodePattern = Pattern.compile("\\b(\\d{6})\\b");
     java.util.regex.Matcher matcher = stockCodePattern.matcher(text);
     if (matcher.find()) {
       return matcher.group(1);
     }
+
     return null;
   }
+
+  /** 섹터명 키워드 매핑 (KRX 업종명 기준). */
+  private static final Map<String, List<String>> SECTOR_KEYWORDS =
+      Map.ofEntries(
+          // KRX: 전기·전자 (반도체 포함)
+          Map.entry("전기·전자", List.of("반도체", "메모리", "파운드리", "HBM", "D램", "낸드", "전자")),
+          // KRX: 운송장비·부품 (자동차 포함)
+          Map.entry("운송장비·부품", List.of("자동차", "전기차", "EV", "완성차", "현대차", "기아")),
+          // KRX: 제약
+          Map.entry("제약", List.of("바이오", "제약", "신약", "임상", "의약")),
+          // KRX: 은행, 증권, 보험 (금융 관련)
+          Map.entry("은행", List.of("은행", "금융")),
+          Map.entry("증권", List.of("증권사", "자산운용")),
+          Map.entry("보험", List.of("보험")),
+          // KRX: IT 서비스
+          Map.entry("IT 서비스", List.of("AI", "인공지능", "소프트웨어", "클라우드", "플랫폼", "게임")),
+          // KRX: 전기·가스 (에너지 포함)
+          Map.entry("전기·가스", List.of("에너지", "태양광", "풍력", "친환경", "2차전지", "배터리")),
+          // KRX: 화학
+          Map.entry("화학", List.of("석유", "정유", "화학", "리튬", "양극재")),
+          // KRX: 기계·장비 (조선 포함)
+          Map.entry("기계·장비", List.of("조선업", "선박", "HD현대중공업", "한화오션", "기계")),
+          // KRX: 금속 (철강 포함)
+          Map.entry("금속", List.of("철강", "포스코", "금속")),
+          // KRX: 통신
+          Map.entry("통신", List.of("통신", "5G")),
+          // KRX: 유통
+          Map.entry("유통", List.of("유통", "소비재", "화장품", "백화점", "이커머스")));
 
   /**
    * 섹터명 추출 (키워드 기반).
@@ -190,22 +278,14 @@ public class NewsTaggerService {
   public String extractSectorName(RawNewsArticle article) {
     String text = buildSearchText(article);
 
-    Map<String, List<String>> sectorKeywords =
-        Map.of(
-            "반도체",
-            List.of("반도체", "메모리", "파운드리", "HBM"),
-            "자동차",
-            List.of("자동차", "전기차", "EV", "배터리"),
-            "바이오",
-            List.of("바이오", "제약", "신약", "임상"),
-            "금융",
-            List.of("은행", "증권", "보험", "금융"),
-            "IT/소프트웨어",
-            List.of("AI", "인공지능", "소프트웨어", "클라우드"));
-
-    for (Map.Entry<String, List<String>> entry : sectorKeywords.entrySet()) {
+    for (Map.Entry<String, List<String>> entry : SECTOR_KEYWORDS.entrySet()) {
       for (String keyword : entry.getValue()) {
         if (text.contains(keyword)) {
+          log.debug(
+              "Found sector {} (keyword: {}) in article: {}",
+              entry.getKey(),
+              keyword,
+              article.getTitle());
           return entry.getKey();
         }
       }

@@ -4,7 +4,6 @@ import io.github.krails0105.stock_info_api.dto.ScoreLabel;
 import io.github.krails0105.stock_info_api.dto.SectorScoreDto;
 import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
 import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockResponse.KrxStockItem;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

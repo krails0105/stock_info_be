@@ -194,7 +194,7 @@ class NewsTaggerServiceTest {
   class SectorExtractionTests {
 
     @Test
-    @DisplayName("반도체 키워드 → 반도체 섹터")
+    @DisplayName("반도체 키워드 → 전기·전자 섹터")
     void testSemiconductorSector() {
       RawNewsArticle article =
           RawNewsArticle.builder()
@@ -205,11 +205,11 @@ class NewsTaggerServiceTest {
 
       String sector = taggerService.extractSectorName(article);
 
-      assertThat(sector).isEqualTo("반도체");
+      assertThat(sector).isEqualTo("전기·전자");
     }
 
     @Test
-    @DisplayName("자동차 키워드 → 자동차 섹터")
+    @DisplayName("자동차 키워드 → 운송장비·부품 섹터")
     void testAutoSector() {
       RawNewsArticle article =
           RawNewsArticle.builder()
@@ -220,7 +220,7 @@ class NewsTaggerServiceTest {
 
       String sector = taggerService.extractSectorName(article);
 
-      assertThat(sector).isEqualTo("자동차");
+      assertThat(sector).isEqualTo("운송장비·부품");
     }
 
     @Test
