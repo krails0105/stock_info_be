@@ -6,6 +6,7 @@ import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockFinancialRes
 import io.github.krails0105.stock_info_api.dto.insight.InsightMeta;
 import io.github.krails0105.stock_info_api.dto.insight.InsightMeta.Source;
 import io.github.krails0105.stock_info_api.dto.insight.InsightNews;
+import io.github.krails0105.stock_info_api.dto.insight.NewsItem;
 import io.github.krails0105.stock_info_api.dto.insight.SectorInsight;
 import io.github.krails0105.stock_info_api.dto.insight.SectorInsight.SectorEntity;
 import io.github.krails0105.stock_info_api.dto.insight.SectorInsight.SectorSummary;
@@ -43,6 +44,7 @@ public class InsightService {
   private final StockService stockService;
   private final SectorService sectorService;
   private final RuleEngineService ruleEngineService;
+  private final NewsAggregatorService newsAggregatorService;
 
   /**
    * 종목 인사이트 생성
@@ -63,8 +65,11 @@ public class InsightService {
     String sectorName = "전체"; // TODO: 섹터 정보 연동 필요
     Map<String, Double> sectorMedians = calculateSectorMedians(sectorName);
 
+    // 뉴스 조회
+    List<NewsItem> newsItems = newsAggregatorService.getNewsByStockCode(stockCode);
+
     // StockSignals 생성
-    StockSignals signals = buildStockSignals(financialItem, sectorMedians);
+    StockSignals signals = buildStockSignals(financialItem, sectorMedians, newsItems);
 
     // RuleEngine으로 인사이트 생성
     return ruleEngineService.buildStockInsight(signals);
@@ -107,6 +112,9 @@ public class InsightService {
     // 섹터 브리핑 생성
     SectorSummary summary = buildSectorSummary(sector, stocks);
 
+    // 뉴스 조회 및 InsightNews 생성
+    InsightNews news = buildSectorNews(sectorName);
+
     return SectorInsight.builder()
         .entity(SectorEntity.builder().name(sectorName).build())
         .meta(
@@ -119,7 +127,7 @@ public class InsightService {
         .summary(summary)
         .topPicks(topPicks)
         .sectionTitle(sectionTitle)
-        .news(InsightNews.builder().issueBrief(List.of()).headlineItems(List.of()).build())
+        .news(news)
         .sampleSize(sampleSize)
         .lowSampleWarning(lowSampleWarning)
         .build();
@@ -128,7 +136,7 @@ public class InsightService {
   // ==================== Private Methods ====================
 
   private StockSignals buildStockSignals(
-      KrxStockFinancialItem item, Map<String, Double> sectorMedians) {
+      KrxStockFinancialItem item, Map<String, Double> sectorMedians, List<NewsItem> newsItems) {
 
     double coverage = calculateCoverage(item);
 
@@ -162,7 +170,7 @@ public class InsightService {
         .isSuspended(false)
         .isAdministrative(false)
         .hasDeficit(item.getPer() <= 0)
-        .newsItems(List.of()) // TODO: 뉴스 연동
+        .newsItems(newsItems != null ? newsItems : List.of())
         .build();
   }
 
@@ -435,5 +443,32 @@ public class InsightService {
     }
 
     return drivers.stream().limit(3).collect(Collectors.toList());
+  }
+
+  /**
+   * 섹터 뉴스 조회 및 InsightNews 생성.
+   *
+   * @param sectorName 섹터명
+   * @return InsightNews
+   */
+  private InsightNews buildSectorNews(String sectorName) {
+    List<NewsItem> newsItems = newsAggregatorService.getNewsBySectorName(sectorName);
+
+    if (newsItems == null || newsItems.isEmpty()) {
+      return InsightNews.builder().issueBrief(List.of()).headlineItems(List.of()).build();
+    }
+
+    // 이슈 브리프: HIGH 중요도 뉴스 제목 최대 2개
+    List<String> issueBrief =
+        newsItems.stream()
+            .filter(n -> n.getImportance() == NewsItem.Importance.HIGH)
+            .limit(2)
+            .map(NewsItem::getTitle)
+            .collect(Collectors.toList());
+
+    // 헤드라인 아이템: 최대 5개
+    List<NewsItem> headlineItems = newsItems.stream().limit(5).collect(Collectors.toList());
+
+    return InsightNews.builder().issueBrief(issueBrief).headlineItems(headlineItems).build();
   }
 }
