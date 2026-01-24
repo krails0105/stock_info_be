@@ -2,7 +2,6 @@ package io.github.krails0105.stock_info_api.service;
 
 import io.github.krails0105.stock_info_api.dto.ScoreLabel;
 import io.github.krails0105.stock_info_api.dto.SectorScoreDto;
-import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
 import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockFinancialResponse.KrxStockFinancialItem;
 import io.github.krails0105.stock_info_api.dto.insight.InsightMeta;
 import io.github.krails0105.stock_info_api.dto.insight.InsightMeta.Source;
@@ -28,13 +27,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-/**
- * 인사이트 생성 통합 서비스. 기존 StockService/SectorService에서 데이터를 가져와 RuleEngineService로 인사이트를 생성.
- */
+/** 인사이트 생성 통합 서비스. 기존 StockService/SectorService에서 데이터를 가져와 RuleEngineService로 인사이트를 생성. */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class InsightService {
+
+  /** P0-1: 표본 부족 경고 임계치 (5개 미만이면 경고) */
+  private static final int LOW_SAMPLE_THRESHOLD = 5;
 
   private final StockService stockService;
   private final SectorService sectorService;
@@ -84,6 +84,10 @@ public class InsightService {
     // 섹터별 종목 조회
     List<StockListItem> stocks = sectorService.getStocksBySectorName(sectorName);
 
+    // P0-1: 표본 크기 정보 계산
+    int sampleSize = stocks != null ? stocks.size() : 0;
+    boolean lowSampleWarning = sampleSize < LOW_SAMPLE_THRESHOLD;
+
     // 섹터 통계 계산
     Map<String, Double> sectorMedians = calculateSectorMediansFromStocks(stocks);
 
@@ -105,6 +109,8 @@ public class InsightService {
         .summary(summary)
         .topPicks(topPicks)
         .news(InsightNews.builder().issueBrief(List.of()).headlineItems(List.of()).build())
+        .sampleSize(sampleSize)
+        .lowSampleWarning(lowSampleWarning)
         .build();
   }
 
@@ -193,13 +199,18 @@ public class InsightService {
             .summaryStatistics();
 
     return Map.of(
-        "per", perStats.getCount() > 0 ? perStats.getAverage() : 15.0,
-        "pbr", pbrStats.getCount() > 0 ? pbrStats.getAverage() : 1.5,
-        "roe", 10.0,
-        "volatility", 2.0);
+        "per",
+        perStats.getCount() > 0 ? perStats.getAverage() : 15.0,
+        "pbr",
+        pbrStats.getCount() > 0 ? pbrStats.getAverage() : 1.5,
+        "roe",
+        10.0,
+        "volatility",
+        2.0);
   }
 
-  private List<TopPick> buildTopPicks(List<StockListItem> stocks, Map<String, Double> sectorMedians) {
+  private List<TopPick> buildTopPicks(
+      List<StockListItem> stocks, Map<String, Double> sectorMedians) {
     if (stocks == null || stocks.isEmpty()) {
       return List.of();
     }
