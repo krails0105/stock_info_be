@@ -38,6 +38,24 @@ Controller → Service → Provider (Data Access) → DTO
 - `SectorService`: Sector data orchestration, score-based sorting, market summary calculation
 - `StockService`: Stock queries, search, top rankings by score
 - `IndexService`: 지수 조회 (TARGET_INDEXES Set으로 필터링)
+- `NewsAggregatorService`: 뉴스 집계, 태깅, 클러스터링, DB 조회
+
+**News Services** (`service/news/`): 뉴스 수집/처리 파이프라인
+- `NewsCollectorService`: RSS 피드 수집 (Google News 주식/경제)
+- `NewsTaggerService`: 키워드 기반 태그 부여 (7종), 중요도 결정
+- `NewsDeduplicatorService`: Jaccard 유사도 기반 클러스터링
+- `NewsProcessorService`: 수집 → 태깅 → 클러스터링 통합 파이프라인
+
+**Scheduler** (`scheduler/`): 주기적 작업
+- `NewsScheduler`: 뉴스 수집 (15분), 처리 (5분) 스케줄러
+
+**Entity** (`entity/`): JPA 엔티티
+- `RawNewsArticle`: 원본 뉴스 (PENDING/PROCESSED/FAILED 상태)
+- `ProcessedNewsArticle`: 처리된 뉴스 (태그, 중요도, 클러스터ID)
+
+**Repository** (`repository/`): JPA 레포지토리
+- `RawNewsArticleRepository`: URL 중복 체크, 상태별 조회
+- `ProcessedNewsArticleRepository`: 종목/섹터별, 클러스터 대표 조회
 
 **Providers** (`provider/`): Data access abstraction using Strategy pattern
 - `SectorDataProvider` / `StockDataProvider` / `IndexDataProvider`: Interfaces for data sources
@@ -116,3 +134,27 @@ Each score includes explanatory reasons for beginner users.
 - Server runs on port 8080
 - KIS API credentials via environment variables: `KIS_APP_KEY`, `KIS_APP_SECRET`, `KIS_ACCOUNT_NUMBER`
 - Spring profile `local` activates mock data providers
+- Spring profile `prod` activates KRX real data providers
+
+### News Configuration (`news.*`)
+```yaml
+news:
+  collection:
+    enabled: true          # 수집 활성화
+    interval-minutes: 15   # 수집 주기
+  processing:
+    batch-size: 100        # 배치 처리 크기
+    interval-minutes: 5    # 처리 주기
+  clustering:
+    similarity-threshold: 0.6  # Jaccard 유사도 임계값
+    window-hours: 72           # 클러스터링 윈도우
+```
+
+### Running with Profiles
+```bash
+# Local (Mock data)
+./gradlew bootRun
+
+# Production (KRX real data)
+SPRING_PROFILES_ACTIVE=prod ./gradlew bootRun
+```
