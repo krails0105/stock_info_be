@@ -1,8 +1,11 @@
 package io.github.krails0105.stock_info_api.service;
 
+import io.github.krails0105.stock_info_api.config.NewsProperties;
 import io.github.krails0105.stock_info_api.dto.insight.NewsItem;
 import io.github.krails0105.stock_info_api.dto.insight.NewsItem.Importance;
 import io.github.krails0105.stock_info_api.dto.insight.NewsItem.Tag;
+import io.github.krails0105.stock_info_api.entity.ProcessedNewsArticle;
+import io.github.krails0105.stock_info_api.repository.ProcessedNewsArticleRepository;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -12,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +33,11 @@ import org.springframework.stereotype.Service;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class NewsAggregatorService {
+
+  private final ProcessedNewsArticleRepository processedNewsRepository;
+  private final NewsProperties newsProperties;
 
   private static final int FRESHNESS_HOURS_HIGH = 24;
   private static final int FRESHNESS_HOURS_MEDIUM = 72;
@@ -233,5 +241,71 @@ public class NewsAggregatorService {
   /** 근거 카드에 사용 가능한 뉴스만 필터링 (RUMOR only 제외). */
   public List<NewsItem> filterForReasonCards(List<NewsItem> newsItems) {
     return newsItems.stream().filter(item -> !isRumorOnly(item)).collect(Collectors.toList());
+  }
+
+  /**
+   * DB에서 종목 관련 뉴스 조회 후 집계.
+   *
+   * @param stockCode 종목 코드
+   * @return 집계된 뉴스 목록
+   */
+  public List<NewsItem> getNewsByStockCode(String stockCode) {
+    int windowHours = newsProperties.getClustering().getWindowHours();
+    LocalDateTime since = LocalDateTime.now().minusHours(windowHours);
+
+    List<ProcessedNewsArticle> articles =
+        processedNewsRepository.findRepresentativeNewsByStockCode(stockCode, since);
+
+    List<NewsItem> newsItems = articles.stream().map(this::toNewsItem).collect(Collectors.toList());
+
+    return sortByImportanceAndFreshness(newsItems);
+  }
+
+  /**
+   * DB에서 섹터 관련 뉴스 조회 후 집계.
+   *
+   * @param sectorName 섹터명
+   * @return 집계된 뉴스 목록
+   */
+  public List<NewsItem> getNewsBySectorName(String sectorName) {
+    int windowHours = newsProperties.getClustering().getWindowHours();
+    LocalDateTime since = LocalDateTime.now().minusHours(windowHours);
+
+    List<ProcessedNewsArticle> articles =
+        processedNewsRepository.findRepresentativeNewsBySectorName(sectorName, since);
+
+    List<NewsItem> newsItems = articles.stream().map(this::toNewsItem).collect(Collectors.toList());
+
+    return sortByImportanceAndFreshness(newsItems);
+  }
+
+  /**
+   * ProcessedNewsArticle → NewsItem 변환.
+   *
+   * @param article DB 엔티티
+   * @return DTO
+   */
+  private NewsItem toNewsItem(ProcessedNewsArticle article) {
+    List<Tag> tags =
+        article.getTags() != null
+            ? article.getTags().stream()
+                .map(t -> Tag.valueOf(t.name()))
+                .collect(Collectors.toList())
+            : List.of();
+
+    Importance importance =
+        article.getImportance() != null
+            ? Importance.valueOf(article.getImportance().name())
+            : Importance.LOW;
+
+    return NewsItem.builder()
+        .title(article.getTitle())
+        .publisher(article.getPublisher())
+        .publishedAt(article.getPublishedAt())
+        .url(article.getUrl())
+        .tags(tags)
+        .importance(importance)
+        .clusterId(article.getClusterId())
+        .build();
   }
 }
