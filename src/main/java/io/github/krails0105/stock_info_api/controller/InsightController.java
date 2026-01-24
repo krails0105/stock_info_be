@@ -11,9 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 인사이트 API 컨트롤러. 종목/섹터에 대한 10초 요약, 룰 기반 분석 결과를 제공.
- */
+/** 인사이트 API 컨트롤러. 종목/섹터에 대한 10초 요약, 룰 기반 분석 결과를 제공. */
 @Slf4j
 @RestController
 @RequestMapping("/api")

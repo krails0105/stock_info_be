@@ -11,6 +11,7 @@ import io.github.krails0105.stock_info_api.dto.insight.SectorInsight.SectorEntit
 import io.github.krails0105.stock_info_api.dto.insight.SectorInsight.SectorSummary;
 import io.github.krails0105.stock_info_api.dto.insight.SectorInsight.TopPick;
 import io.github.krails0105.stock_info_api.dto.insight.SectorInsight.TopPick.PickType;
+import io.github.krails0105.stock_info_api.dto.insight.SectorInsight.TopPick.TopPickRole;
 import io.github.krails0105.stock_info_api.dto.insight.StockInsight;
 import io.github.krails0105.stock_info_api.dto.response.StockListItem;
 import io.github.krails0105.stock_info_api.service.rule.RuleConstants;
@@ -35,6 +36,9 @@ public class InsightService {
 
   /** P0-1: 표본 부족 경고 임계치 (5개 미만이면 경고) */
   private static final int LOW_SAMPLE_THRESHOLD = 5;
+
+  /** P0-3: 섹터 대표 종목 역할 결정 임계 점수 (섹터 평균 점수 < 60이면 REPRESENTATIVE) */
+  private static final int REPRESENTATIVE_SCORE_THRESHOLD = 60;
 
   private final StockService stockService;
   private final SectorService sectorService;
@@ -91,8 +95,14 @@ public class InsightService {
     // 섹터 통계 계산
     Map<String, Double> sectorMedians = calculateSectorMediansFromStocks(stocks);
 
-    // Top Picks 생성
-    List<TopPick> topPicks = buildTopPicks(stocks, sectorMedians);
+    // P0-3: TopPick 역할 결정
+    TopPickRole role = determineTopPickRole(sector, stocks);
+
+    // Top Picks 생성 (역할 포함)
+    List<TopPick> topPicks = buildTopPicks(stocks, sectorMedians, role);
+
+    // P0-3: 섹션 타이틀 생성
+    String sectionTitle = buildSectionTitle(role, topPicks.size());
 
     // 섹터 브리핑 생성
     SectorSummary summary = buildSectorSummary(sector, stocks);
@@ -108,6 +118,7 @@ public class InsightService {
                 .build())
         .summary(summary)
         .topPicks(topPicks)
+        .sectionTitle(sectionTitle)
         .news(InsightNews.builder().issueBrief(List.of()).headlineItems(List.of()).build())
         .sampleSize(sampleSize)
         .lowSampleWarning(lowSampleWarning)
@@ -210,7 +221,7 @@ public class InsightService {
   }
 
   private List<TopPick> buildTopPicks(
-      List<StockListItem> stocks, Map<String, Double> sectorMedians) {
+      List<StockListItem> stocks, Map<String, Double> sectorMedians, TopPickRole role) {
     if (stocks == null || stocks.isEmpty()) {
       return List.of();
     }
@@ -236,10 +247,50 @@ public class InsightService {
               .pickType(pickType)
               .reasons(reasons)
               .caution(caution)
+              .role(role)
               .build());
     }
 
     return topPicks;
+  }
+
+  /**
+   * P0-3: TopPick 역할 결정
+   *
+   * <p>섹터가 STRONG이고 종목 평균 점수가 60 미만이면 REPRESENTATIVE (섹터 대표 종목), 그 외에는 WATCHLIST_PRIORITY (우선 관찰
+   * 종목)
+   */
+  private TopPickRole determineTopPickRole(SectorScoreDto sector, List<StockListItem> stocks) {
+    if (sector.getLabel() != ScoreLabel.STRONG) {
+      return TopPickRole.WATCHLIST_PRIORITY;
+    }
+
+    // 상위 종목들의 평균 점수 계산
+    double avgScore =
+        stocks.stream()
+            .sorted(Comparator.comparingInt(StockListItem::getScore).reversed())
+            .limit(RuleConstants.DEFAULT_TOP_PICKS_COUNT)
+            .mapToInt(StockListItem::getScore)
+            .average()
+            .orElse(0.0);
+
+    if (avgScore < REPRESENTATIVE_SCORE_THRESHOLD) {
+      return TopPickRole.REPRESENTATIVE;
+    }
+
+    return TopPickRole.WATCHLIST_PRIORITY;
+  }
+
+  /**
+   * P0-3: 섹션 타이틀 생성
+   *
+   * <p>REPRESENTATIVE: "섹터 대표 종목 Top N", WATCHLIST_PRIORITY: "우선 검토 종목 Top N"
+   */
+  private String buildSectionTitle(TopPickRole role, int count) {
+    return switch (role) {
+      case REPRESENTATIVE -> String.format("섹터 대표 종목 Top %d", count);
+      case WATCHLIST_PRIORITY -> String.format("우선 검토 종목 Top %d", count);
+    };
   }
 
   private PickType determinePickType(StockListItem stock, Map<String, Double> sectorMedians) {
