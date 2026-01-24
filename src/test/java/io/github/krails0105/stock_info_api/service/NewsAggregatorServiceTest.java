@@ -8,6 +8,7 @@ import io.github.krails0105.stock_info_api.dto.insight.NewsItem;
 import io.github.krails0105.stock_info_api.dto.insight.NewsItem.Importance;
 import io.github.krails0105.stock_info_api.dto.insight.NewsItem.Tag;
 import io.github.krails0105.stock_info_api.repository.ProcessedNewsArticleRepository;
+import io.github.krails0105.stock_info_api.service.news.NewsDeduplicatorService;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,12 +22,15 @@ class NewsAggregatorServiceTest {
   private NewsAggregatorService newsAggregatorService;
   private ProcessedNewsArticleRepository processedNewsRepository;
   private NewsProperties newsProperties;
+  private NewsDeduplicatorService deduplicatorService;
 
   @BeforeEach
   void setUp() {
     processedNewsRepository = mock(ProcessedNewsArticleRepository.class);
     newsProperties = mock(NewsProperties.class);
-    newsAggregatorService = new NewsAggregatorService(processedNewsRepository, newsProperties);
+    deduplicatorService = new NewsDeduplicatorService(processedNewsRepository, newsProperties);
+    newsAggregatorService =
+        new NewsAggregatorService(processedNewsRepository, newsProperties, deduplicatorService);
   }
 
   @Nested
@@ -181,7 +185,7 @@ class NewsAggregatorServiceTest {
     void testNewerNewsFirst() {
       NewsItem oldNews =
           NewsItem.builder()
-              .title("실적 발표 A")
+              .title("삼성전자 영업이익 발표 컨센서스 상회")
               .publisher("한경")
               .publishedAt(LocalDateTime.now().minusDays(2))
               .url("https://example.com/1")
@@ -190,7 +194,7 @@ class NewsAggregatorServiceTest {
 
       NewsItem newNews =
           NewsItem.builder()
-              .title("실적 발표 B")
+              .title("현대차 2분기 매출 사상 최대 기록")
               .publisher("매경")
               .publishedAt(LocalDateTime.now())
               .url("https://example.com/2")
@@ -200,6 +204,7 @@ class NewsAggregatorServiceTest {
       List<NewsItem> result = newsAggregatorService.aggregate(List.of(oldNews, newNews));
 
       // 최신 뉴스가 먼저
+      assertThat(result).hasSize(2);
       assertThat(result.get(0).getPublishedAt()).isAfter(result.get(1).getPublishedAt());
     }
   }

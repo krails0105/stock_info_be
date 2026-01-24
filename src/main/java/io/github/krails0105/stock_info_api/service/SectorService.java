@@ -92,8 +92,8 @@ public class SectorService {
   private String generateOneLiner(ScoreLabel label, double avgScore) {
     return switch (label) {
       case STRONG -> String.format("오늘 시장: 강세 (평균 점수 %.0f점)", avgScore);
-      case NEUTRAL -> String.format("오늘 시장: 중립 (변동성 보통)", avgScore);
-      case WEAK -> String.format("오늘 시장: 약세 (신중한 접근 필요)", avgScore);
+      case NEUTRAL -> String.format("오늘 시장: 중립 (평균 점수 %.0f점)", avgScore);
+      case WEAK -> String.format("오늘 시장: 약세 (평균 점수 %.0f점)", avgScore);
     };
   }
 }

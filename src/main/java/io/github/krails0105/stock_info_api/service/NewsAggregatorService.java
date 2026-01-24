@@ -6,6 +6,7 @@ import io.github.krails0105.stock_info_api.dto.insight.NewsItem.Importance;
 import io.github.krails0105.stock_info_api.dto.insight.NewsItem.Tag;
 import io.github.krails0105.stock_info_api.entity.ProcessedNewsArticle;
 import io.github.krails0105.stock_info_api.repository.ProcessedNewsArticleRepository;
+import io.github.krails0105.stock_info_api.service.news.NewsDeduplicatorService;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ public class NewsAggregatorService {
 
   private final ProcessedNewsArticleRepository processedNewsRepository;
   private final NewsProperties newsProperties;
+  private final NewsDeduplicatorService deduplicatorService;
 
   private static final int FRESHNESS_HOURS_HIGH = 24;
   private static final int FRESHNESS_HOURS_MEDIUM = 72;
@@ -161,29 +163,9 @@ public class NewsAggregatorService {
     return null;
   }
 
-  /** 간단한 자카드 유사도 계산 (단어 기반). */
+  /** Jaccard 유사도 계산 (NewsDeduplicatorService 위임). */
   private double calculateSimilarity(String title1, String title2) {
-    if (title1 == null || title2 == null) {
-      return 0.0;
-    }
-
-    String[] words1 = title1.toLowerCase().split("\\s+");
-    String[] words2 = title2.toLowerCase().split("\\s+");
-
-    java.util.Set<String> set1 = new java.util.HashSet<>(java.util.Arrays.asList(words1));
-    java.util.Set<String> set2 = new java.util.HashSet<>(java.util.Arrays.asList(words2));
-
-    java.util.Set<String> intersection = new java.util.HashSet<>(set1);
-    intersection.retainAll(set2);
-
-    java.util.Set<String> union = new java.util.HashSet<>(set1);
-    union.addAll(set2);
-
-    if (union.isEmpty()) {
-      return 0.0;
-    }
-
-    return (double) intersection.size() / union.size();
+    return deduplicatorService.calculateJaccardSimilarity(title1, title2);
   }
 
   /** 클러스터에서 대표 뉴스 선택 (중요도 높고 최신). */
