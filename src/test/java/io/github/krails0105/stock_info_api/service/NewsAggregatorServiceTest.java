@@ -1,10 +1,13 @@
 package io.github.krails0105.stock_info_api.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
+import io.github.krails0105.stock_info_api.config.NewsProperties;
 import io.github.krails0105.stock_info_api.dto.insight.NewsItem;
 import io.github.krails0105.stock_info_api.dto.insight.NewsItem.Importance;
 import io.github.krails0105.stock_info_api.dto.insight.NewsItem.Tag;
+import io.github.krails0105.stock_info_api.repository.ProcessedNewsArticleRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,10 +19,14 @@ import org.junit.jupiter.api.Test;
 class NewsAggregatorServiceTest {
 
   private NewsAggregatorService newsAggregatorService;
+  private ProcessedNewsArticleRepository processedNewsRepository;
+  private NewsProperties newsProperties;
 
   @BeforeEach
   void setUp() {
-    newsAggregatorService = new NewsAggregatorService();
+    processedNewsRepository = mock(ProcessedNewsArticleRepository.class);
+    newsProperties = mock(NewsProperties.class);
+    newsAggregatorService = new NewsAggregatorService(processedNewsRepository, newsProperties);
   }
 
   @Nested
