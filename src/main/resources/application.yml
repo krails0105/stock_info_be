@@ -2,8 +2,29 @@ spring:
   application:
     name: stock-info-api
   profiles:
-    active: prod
+    active: ${SPRING_PROFILES_ACTIVE:local}
     include: secret  # application-secret.yml 자동 로드 (git 제외됨)
+
+  # Database Configuration (H2 기본)
+  datasource:
+    url: jdbc:h2:mem:stockinfo;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
 
 server:
   port: 8080
@@ -24,3 +45,18 @@ rest-client:
     app-key: ${KIS_APP_KEY:}
     app-secret: ${KIS_APP_SECRET:}
     account-number: ${KIS_ACCOUNT_NUMBER:}
+
+# News Ingestion Configuration
+news:
+  collection:
+    enabled: true
+    interval-minutes: 15
+  processing:
+    batch-size: 100
+    interval-minutes: 5
+  freshness:
+    high-hours: 24
+    medium-hours: 72
+  clustering:
+    similarity-threshold: 0.6
+    window-hours: 72
