@@ -1,6 +1,23 @@
 package io.github.krails0105.stock_info_api.service.rule;
 
-import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.*;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.COVERAGE_LOW_THRESHOLD;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.MAX_CAUTION_CARDS;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.MAX_POSITIVE_CARDS;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.MAX_POSITIVE_CARDS_LOW_COVERAGE;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.MIN_CAUTION_CARDS;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.PBR_HIGH_RATIO;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.PBR_LOW_RATIO;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.PER_HIGH_RATIO;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.PER_LOW_RATIO;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.ROE_HIGH_RATIO;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.TONE_MEDIUM_SCORE;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.TONE_STRONG_COVERAGE;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.TONE_STRONG_SCORE;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.TOP_RETURN_PERCENTILE;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.VOLATILITY_HIGH_RATIO;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.VOLATILITY_LOW_RATIO;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.VOLUME_RATIO_OVERHEAT;
+import static io.github.krails0105.stock_info_api.service.rule.RuleConstants.VOLUME_RATIO_THRESHOLD;
 
 import io.github.krails0105.stock_info_api.dto.ScoreLabel;
 import io.github.krails0105.stock_info_api.dto.insight.InsightMeta;
@@ -78,7 +95,17 @@ public class RuleEngineService {
 
     // === Build Result ===
     Template template = pickTemplate(triggeredRules, signals, flags);
-    InsightSummary summary = buildSummary(template, signals, flags);
+
+    // 점수 먼저 계산 (톤 매칭에 필요)
+    int baseScore = calculateBaseScore(signals);
+    // 리스크 플래그에 따른 조정
+    if (flags.riskLevel == RiskLevel.HIGH) {
+      baseScore = Math.min(baseScore, 30);
+    } else if (flags.hasOverheat || flags.hasNegativeNews) {
+      baseScore = Math.min(baseScore, 50);
+    }
+
+    InsightSummary summary = buildSummary(template, signals, flags, baseScore);
 
     // 카드 선택 및 정렬
     List<ReasonCard> finalPositive = selectPositiveCards(positiveCards, signals.getDataCoverage());
@@ -96,7 +123,7 @@ public class RuleEngineService {
             .triggeredRules(triggeredRules)
             .build();
 
-    InsightScore score = buildScore(signals, flags);
+    InsightScore score = buildScore(baseScore, signals, flags);
     InsightMeta meta = buildMeta(signals);
     InsightNews news = buildNews(signals.getNewsItems());
 
@@ -392,7 +419,10 @@ public class RuleEngineService {
     Double sectorMedianPbr = signals.getSectorMedianPbr();
 
     // V-01: PER 저평가
-    if (per != null && sectorMedianPer != null && per > 0 && per <= sectorMedianPer * PER_LOW_RATIO) {
+    if (per != null
+        && sectorMedianPer != null
+        && per > 0
+        && per <= sectorMedianPer * PER_LOW_RATIO) {
       triggeredRules.add("V-01");
       positiveCards.add(
           ReasonCard.builder()
@@ -420,7 +450,10 @@ public class RuleEngineService {
     }
 
     // V-03: PBR 저평가
-    if (pbr != null && sectorMedianPbr != null && pbr > 0 && pbr <= sectorMedianPbr * PBR_LOW_RATIO) {
+    if (pbr != null
+        && sectorMedianPbr != null
+        && pbr > 0
+        && pbr <= sectorMedianPbr * PBR_LOW_RATIO) {
       triggeredRules.add("V-03");
       positiveCards.add(
           ReasonCard.builder()
@@ -516,7 +549,8 @@ public class RuleEngineService {
    * 템플릿 선택 우선순위: E(리스크) > B(모멘텀) > D(성장) > A(밸류) > C(안정) 동점이면 riskLevel↑, staleness↑, coverage↓일수록
    * 보수적으로(E/C)
    */
-  private Template pickTemplate(List<String> triggeredRules, StockSignals signals, RuleFlags flags) {
+  private Template pickTemplate(
+      List<String> triggeredRules, StockSignals signals, RuleFlags flags) {
 
     // E: 리스크형 - 하드필터/과열/부정뉴스
     if (flags.riskLevel == RiskLevel.HIGH || flags.hasOverheat || flags.hasNegativeNews) {
@@ -545,8 +579,10 @@ public class RuleEngineService {
 
   // ==================== Summary Building ====================
 
-  private InsightSummary buildSummary(Template template, StockSignals signals, RuleFlags flags) {
-    String headline = getHeadlineForTemplate(template);
+  private InsightSummary buildSummary(
+      Template template, StockSignals signals, RuleFlags flags, int score) {
+    // P0-2: 톤 매칭 헤드라인 적용
+    String headline = getToneMatchedHeadline(template, score, signals.getDataCoverage(), flags);
     Tone tone = (template == Template.E_RISK) ? Tone.CAUTIOUS_GUIDE : Tone.ACTIVE_GUIDE;
     ActionHint actionHint = getActionHintForTemplate(template);
 
@@ -556,6 +592,67 @@ public class RuleEngineService {
         .tone(tone)
         .actionHint(actionHint)
         .build();
+  }
+
+  /**
+   * P0-2: 점수/coverage 기반 톤 매칭 헤드라인 생성
+   *
+   * <p>- score>=70 & coverage>=0.7 → 강한 톤 (우선 검토/유력 후보) - 50<=score<70 → 중간 톤 (관찰 리스트 상단) -
+   * score<50 OR coverage<0.7 → 조건부 톤 (확인 후 접근) - HF-04 존재 시 조건부 프리픽스 자동 추가
+   */
+  private String getToneMatchedHeadline(
+      Template template, int score, double coverage, RuleFlags flags) {
+
+    // HF-04 (정보 부족) 시 조건부 프리픽스
+    if (flags.hasLowCoverage) {
+      return "정보가 제한적이지만, " + getConditionalHeadline(template);
+    }
+
+    // 강한 톤: score>=70 && coverage>=0.7
+    if (score >= TONE_STRONG_SCORE && coverage >= TONE_STRONG_COVERAGE) {
+      return getStrongToneHeadline(template);
+    }
+
+    // 중간 톤: 50<=score<70
+    if (score >= TONE_MEDIUM_SCORE) {
+      return getMediumToneHeadline(template);
+    }
+
+    // 조건부 톤: score<50 OR coverage<0.7
+    return getConditionalHeadline(template);
+  }
+
+  /** 강한 톤 헤드라인 (score>=70 && coverage>=0.7) */
+  private String getStrongToneHeadline(Template template) {
+    return switch (template) {
+      case A_VALUE -> "섹터 대비 부담이 낮아 우선 검토할 만한 유력 후보예요.";
+      case B_MOMENTUM -> "추세가 강해서 단기 관찰 우선순위가 높은 종목이에요.";
+      case C_STABLE -> "안정적인 흐름으로 초보자가 우선 검토하기 좋은 후보예요.";
+      case D_GROWTH -> "실적 흐름이 좋아 유력 후보로 살펴볼 만해요.";
+      case E_RISK -> "리스크 신호가 있어 관망이 기본이에요.";
+    };
+  }
+
+  /** 중간 톤 헤드라인 (50<=score<70) */
+  private String getMediumToneHeadline(Template template) {
+    return switch (template) {
+      case A_VALUE -> "밸류 측면은 괜찮아서 관찰 리스트 상단에 올려둘 만해요.";
+      case B_MOMENTUM -> "단기 흐름이 있어 관찰 리스트에서 지켜볼 만해요.";
+      case C_STABLE -> "무난한 안정형으로 관찰 리스트에 담아둘 만해요.";
+      case D_GROWTH -> "성장 가능성이 있어 관찰하며 확인해 볼 종목이에요.";
+      case E_RISK -> "리스크가 있어 관찰로만 접근하는 게 좋아요.";
+    };
+  }
+
+  /** 조건부 톤 헤드라인 (score<50 OR coverage<0.7) */
+  private String getConditionalHeadline(Template template) {
+    return switch (template) {
+      case A_VALUE -> "밸류 측면은 괜찮지만, 확인 후 접근이 좋아요.";
+      case B_MOMENTUM -> "단기 흐름이 있으나 조건부로 관찰해 보세요.";
+      case C_STABLE -> "안정적이나 추가 확인 후 접근이 좋아요.";
+      case D_GROWTH -> "성장 기대가 있지만 실적 확인이 먼저예요.";
+      case E_RISK -> "리스크가 있어 관망이 기본, 관찰로만 접근이 안전해요.";
+    };
   }
 
   private String getHeadlineForTemplate(Template template) {
@@ -600,11 +697,10 @@ public class RuleEngineService {
 
   // ==================== Card Selection ====================
 
-  /**
-   * 긍정 카드 선택 - coverage 낮으면 2개, 아니면 3개 - 카테고리 다양성 유지
-   */
+  /** 긍정 카드 선택 - coverage 낮으면 2개, 아니면 3개 - 카테고리 다양성 유지 */
   private List<ReasonCard> selectPositiveCards(List<ReasonCard> cards, double coverage) {
-    int maxCards = coverage < COVERAGE_LOW_THRESHOLD ? MAX_POSITIVE_CARDS_LOW_COVERAGE : MAX_POSITIVE_CARDS;
+    int maxCards =
+        coverage < COVERAGE_LOW_THRESHOLD ? MAX_POSITIVE_CARDS_LOW_COVERAGE : MAX_POSITIVE_CARDS;
 
     // 강도 순으로 정렬
     List<ReasonCard> sorted =
@@ -628,7 +724,8 @@ public class RuleEngineService {
   }
 
   /**
-   * 주의 카드 선택 - 리스크/과열/부정뉴스가 있으면 2개, 아니면 1개 - 우선순위: RISK > MOMENTUM > NEWS > FUNDAMENTALS > VALUATION
+   * 주의 카드 선택 - 리스크/과열/부정뉴스가 있으면 2개, 아니면 1개 - 우선순위: RISK > MOMENTUM > NEWS > FUNDAMENTALS >
+   * VALUATION
    */
   private List<ReasonCard> selectCautionCards(List<ReasonCard> cards, RuleFlags flags) {
     int maxCards =
@@ -666,24 +763,14 @@ public class RuleEngineService {
 
   // ==================== Score Building ====================
 
-  private InsightScore buildScore(StockSignals signals, RuleFlags flags) {
-    // 기존 점수 시스템 활용하면서 flags 기반 조정
-    int baseScore = calculateBaseScore(signals);
-
-    // 리스크 플래그에 따른 조정
-    if (flags.riskLevel == RiskLevel.HIGH) {
-      baseScore = Math.min(baseScore, 30);
-    } else if (flags.hasOverheat || flags.hasNegativeNews) {
-      baseScore = Math.min(baseScore, 50);
-    }
-
-    ScoreLabel grade = ScoreLabel.fromScore(baseScore);
+  private InsightScore buildScore(int adjustedScore, StockSignals signals, RuleFlags flags) {
+    ScoreLabel grade = ScoreLabel.fromScore(adjustedScore);
     Confidence confidence =
         signals.getDataCoverage() >= 0.8
             ? Confidence.HIGH
             : (signals.getDataCoverage() >= 0.5 ? Confidence.MEDIUM : Confidence.LOW);
 
-    return InsightScore.builder().value(baseScore).grade(grade).confidence(confidence).build();
+    return InsightScore.builder().value(adjustedScore).grade(grade).confidence(confidence).build();
   }
 
   private int calculateBaseScore(StockSignals signals) {
