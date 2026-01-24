@@ -19,6 +19,9 @@ public class SectorInsight {
   private final Integer sampleSize;
   private final Boolean lowSampleWarning;
 
+  // P0-3: 동적 섹션 타이틀
+  private final String sectionTitle;
+
   @Getter
   @Builder
   public static class SectorEntity {
@@ -45,11 +48,20 @@ public class SectorInsight {
       WATCH
     }
 
+    // P0-3: TopPick 역할 구분
+    public enum TopPickRole {
+      REPRESENTATIVE, // 섹터 대표 종목
+      WATCHLIST_PRIORITY // 우선 관찰 종목
+    }
+
     private final String code;
     private final String name;
     private final ScoreLabel grade;
     private final PickType pickType;
     private final List<String> reasons;
     private final String caution;
+
+    // P0-3: 역할 필드
+    private final TopPickRole role;
   }
 }

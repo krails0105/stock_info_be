@@ -5,9 +5,7 @@ import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 
-/**
- * 룰 엔진에 전달되는 종목 신호 데이터. 기존 StockInfo/KrxStockFinancialItem에서 추출한 정보와 섹터 통계 정보를 포함.
- */
+/** 룰 엔진에 전달되는 종목 신호 데이터. 기존 StockInfo/KrxStockFinancialItem에서 추출한 정보와 섹터 통계 정보를 포함. */
 @Getter
 @Builder
 public class StockSignals {
