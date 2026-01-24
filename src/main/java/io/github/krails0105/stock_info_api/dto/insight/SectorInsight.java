@@ -15,6 +15,10 @@ public class SectorInsight {
   private final List<TopPick> topPicks;
   private final InsightNews news;
 
+  // P0-1: 표본 크기 정보
+  private final Integer sampleSize;
+  private final Boolean lowSampleWarning;
+
   @Getter
   @Builder
   public static class SectorEntity {
