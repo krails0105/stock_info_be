@@ -1,8 +1,6 @@
 package io.github.krails0105.stock_info_api.service.rule;
 
-/**
- * 룰 엔진에서 사용하는 임계치 상수. 운영 데이터 기반으로 추후 튜닝 가능.
- */
+/** 룰 엔진에서 사용하는 임계치 상수. 운영 데이터 기반으로 추후 튜닝 가능. */
 public final class RuleConstants {
 
   private RuleConstants() {}
@@ -64,4 +62,14 @@ public final class RuleConstants {
 
   /** 뉴스 신선도 기준 (시간) */
   public static final int NEWS_FRESHNESS_HOURS = 72;
+
+  // === Tone Matching 임계치 (P0-2) ===
+  /** 강한 톤 점수 기준 (70점 이상) */
+  public static final int TONE_STRONG_SCORE = 70;
+
+  /** 강한 톤 coverage 기준 (0.7 이상) */
+  public static final double TONE_STRONG_COVERAGE = 0.7;
+
+  /** 중간 톤 점수 기준 (50점 이상) */
+  public static final int TONE_MEDIUM_SCORE = 50;
 }
