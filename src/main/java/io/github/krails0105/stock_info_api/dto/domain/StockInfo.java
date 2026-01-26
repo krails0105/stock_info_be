@@ -108,6 +108,8 @@ public class StockInfo {
   /**
    * 재무 정보를 병합한 새 StockInfo 반환
    *
+   * <p>재무 데이터(KrxStockFinancialItem)의 가격/등락률 정보를 우선 사용하여 Stock Detail 페이지와 일관성 유지
+   *
    * @param financialItem KRX 재무지표 데이터
    * @return 재무 정보가 병합된 StockInfo 객체
    */
@@ -118,9 +120,10 @@ public class StockInfo {
     return StockInfo.builder()
         .code(this.code)
         .name(this.name)
-        .price(this.price)
-        .priceChange(this.priceChange)
-        .changeRate(this.changeRate)
+        // 가격/등락률: 재무 데이터 우선 사용 (Stock Detail과 일관성 유지)
+        .price(financialItem.getClosingPrice())
+        .priceChange(financialItem.getPriceChange())
+        .changeRate(financialItem.getChangeRate())
         .market(this.market)
         .sectorName(this.sectorName)
         .marketCap(this.marketCap)
