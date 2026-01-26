@@ -158,3 +158,24 @@ news:
 # Production (KRX real data)
 SPRING_PROFILES_ACTIVE=prod ./gradlew bootRun
 ```
+
+## 작업 완료 체크리스트
+
+작업 완료 시 아래 순서대로 진행:
+
+1. **코드 포맷팅 및 커밋**
+   ```bash
+   ./gradlew spotlessApply
+   git add .
+   git commit -m "feat: 작업 내용"
+   git push
+   ```
+
+2. **문서 업데이트**
+   - `../docs/PROGRESS.md` 작업 내역 추가
+   - 필요시 이 파일(CLAUDE.md) 업데이트
+
+3. **PR 생성** (feature 브랜치인 경우)
+   ```bash
+   gh pr create --title "제목" --body "## Summary\n- 내용"
+   ```
