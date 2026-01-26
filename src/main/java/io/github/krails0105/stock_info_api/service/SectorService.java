@@ -20,6 +20,9 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class SectorService {
 
+  /** P0-1: TOP3 후보 최소 표본 수 (5개 미만이면 TOP3에서 제외) */
+  private static final int MIN_SAMPLE_SIZE_FOR_TOP3 = 5;
+
   private final SectorDataProvider sectorDataProvider;
 
   public ScoreboardResponse getScoreboard() {
@@ -31,8 +34,13 @@ public class SectorService {
             .sorted(Comparator.comparingInt(SectorScoreDto::getScore).reversed())
             .toList();
 
-    // Hot Sectors TOP 3
-    List<HotSectorDto> hotSectors = sortedSectors.stream().limit(3).map(this::toHotSector).toList();
+    // P0-1: Hot Sectors TOP 3 - 표본 수 5개 이상인 섹터만 후보로 선정
+    List<HotSectorDto> hotSectors =
+        sortedSectors.stream()
+            .filter(s -> s.getStockCount() >= MIN_SAMPLE_SIZE_FOR_TOP3)
+            .limit(3)
+            .map(this::toHotSector)
+            .toList();
 
     // 시장 요약 계산
     MarketSummaryDto marketSummary = calculateMarketSummary(allSectors);
