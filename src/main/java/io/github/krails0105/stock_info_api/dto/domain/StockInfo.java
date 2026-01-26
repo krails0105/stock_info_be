@@ -104,4 +104,35 @@ public class StockInfo {
         .marketCap(item.getMarketCap())
         .build();
   }
+
+  /**
+   * 재무 정보를 병합한 새 StockInfo 반환
+   *
+   * @param financialItem KRX 재무지표 데이터
+   * @return 재무 정보가 병합된 StockInfo 객체
+   */
+  public StockInfo withFinancialInfo(KrxStockFinancialItem financialItem) {
+    if (financialItem == null) {
+      return this;
+    }
+    return StockInfo.builder()
+        .code(this.code)
+        .name(this.name)
+        .price(this.price)
+        .priceChange(this.priceChange)
+        .changeRate(this.changeRate)
+        .market(this.market)
+        .sectorName(this.sectorName)
+        .marketCap(this.marketCap)
+        // 재무 정보 추가
+        .eps(financialItem.getEps())
+        .bps(financialItem.getBps())
+        .per(financialItem.getPer())
+        .pbr(financialItem.getPbr())
+        .forwardEps(financialItem.getForwardEps())
+        .forwardPer(financialItem.getForwardPer())
+        .dividendPerShare(financialItem.getDividendPerShare())
+        .dividendYield(financialItem.getDividendYield())
+        .build();
+  }
 }

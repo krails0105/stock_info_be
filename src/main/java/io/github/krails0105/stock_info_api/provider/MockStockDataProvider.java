@@ -252,8 +252,39 @@ public class MockStockDataProvider implements StockDataProvider {
 
   @Override
   public KrxStockFinancialItem getStocksByStockId(String stockId) {
-    // Mock: null 반환 (실제 데이터는 KrxStockDataProviderImpl에서 제공)
-    return null;
+    StockScoreDto stock = stockMap.get(stockId);
+    if (stock == null) {
+      return null;
+    }
+    // Mock 재무 데이터 생성 (점수에 따라 PER/PBR 결정)
+    double per = stock.getScore() >= 70 ? 12.5 : (stock.getScore() >= 40 ? 18.0 : 25.0);
+    double pbr = stock.getScore() >= 70 ? 1.2 : (stock.getScore() >= 40 ? 1.8 : 2.5);
+    return KrxStockFinancialItem.builder()
+        .stockCode(stock.getCode())
+        .stockName(stock.getName())
+        .closingPrice(stock.getPrice())
+        .priceChange(0)
+        .changeRate(parseChangeRate(stock.getPriceChange()))
+        .eps(stock.getPrice() / per)
+        .per(per)
+        .bps(stock.getPrice() / pbr)
+        .pbr(pbr)
+        .forwardEps(stock.getPrice() / (per * 0.9))
+        .forwardPer(per * 0.9)
+        .dividendPerShare((long) (stock.getPrice() * 0.02))
+        .dividendYield(2.0)
+        .build();
+  }
+
+  private double parseChangeRate(String changeRate) {
+    if (changeRate == null || changeRate.isEmpty()) {
+      return 0.0;
+    }
+    try {
+      return Double.parseDouble(changeRate.replace("%", "").replace("+", ""));
+    } catch (NumberFormatException e) {
+      return 0.0;
+    }
   }
 
   @Override
