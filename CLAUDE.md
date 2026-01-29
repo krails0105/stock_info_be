@@ -59,6 +59,7 @@ Controller → Service → Provider (Data Access) → DTO
 
 **Providers** (`provider/`): Data access abstraction using Strategy pattern
 - `SectorDataProvider` / `StockDataProvider` / `IndexDataProvider`: Interfaces for data sources
+- `ChartDataProvider`: 차트 데이터 인터페이스 (MockChartDataProvider, KrxChartDataProvider)
 - `MockSectorDataProvider` / `MockStockDataProvider`: Development implementations (`@Profile("local")`)
 - `KrxStockDataProviderImpl`: KRX API integration
 - `KrxIndexDataProviderImpl`: KRX 지수 API (INDEX_CODES Map으로 관리)
@@ -92,9 +93,10 @@ External API/DB → Provider → Service → Controller → Client
 **주요 DTO:**
 - `StockInfo` (Domain): 주식 기본 정보 (code, name, price, priceChange, changeRate, per, pbr, market, sectorName, marketCap 등)
 - `Index` (Domain): 지수 정보 (name, closingPrice, priceChange, changeRate, openingPrice, highPrice, lowPrice 등)
-- `StockResponse` (Response): 상세 조회용 - `fromStockInfo()` 메서드로 변환
-- `StockListItem` (Response): 목록 조회용 - `fromStockInfo()` 메서드로 변환 (price, priceChange, changeRate, marketCap, per, pbr, score 등)
-- `IndexResponse` (Response): 지수 응답용 - `fromIndex()` 메서드로 변환 (changeRate 포맷팅, marketStatus 추가)
+- `StockDetailResponse` (Response): 종목 상세 조회용 (stockCode, stockName, closingPrice, eps, per, bps, pbr 등)
+- `ChartResponse` (Response): 차트 데이터 응답 (dataPoints, meta)
+- `StockListItem` (Response): 목록 조회용 - `fromStockInfo()` 메서드로 변환
+- `IndexResponse` (Response): 지수 응답용 - `fromIndex()` 메서드로 변환
 - `KrxStockItem` / `KrxStockFinancialItem` / `KrxIndexResponse` (External): KRX API 응답 매핑
 
 ### Key Endpoints
