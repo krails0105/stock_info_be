@@ -4,7 +4,7 @@ import io.github.krails0105.stock_info_api.dto.StockListResponse;
 import io.github.krails0105.stock_info_api.dto.StockScoreDto;
 import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
 import io.github.krails0105.stock_info_api.dto.response.ChartResponse;
-import io.github.krails0105.stock_info_api.dto.response.StockResponse;
+import io.github.krails0105.stock_info_api.dto.response.StockDetailResponse;
 import io.github.krails0105.stock_info_api.service.StockService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -37,13 +37,13 @@ public class StockController {
 
   /** 종목 상세 조회 */
   @GetMapping("/{id}")
-  public ResponseEntity<StockResponse> getStockById(@PathVariable String id) {
+  public ResponseEntity<StockDetailResponse> getStockById(@PathVariable String id) {
     log.info("Request to get stock: {}", id);
     StockInfo stockInfo = stockService.getStockById(id);
     if (stockInfo == null) {
       return ResponseEntity.notFound().build();
     }
-    return ResponseEntity.ok(StockResponse.fromStockInfo(stockInfo));
+    return ResponseEntity.ok(StockDetailResponse.fromStockInfo(stockInfo));
   }
 
   /** 종목 검색 */
