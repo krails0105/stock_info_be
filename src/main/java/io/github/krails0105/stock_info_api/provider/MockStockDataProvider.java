@@ -3,7 +3,6 @@ package io.github.krails0105.stock_info_api.provider;
 import io.github.krails0105.stock_info_api.dto.ScoreLabel;
 import io.github.krails0105.stock_info_api.dto.StockScoreDto;
 import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
-import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockFinancialResponse.KrxStockFinancialItem;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -251,7 +250,7 @@ public class MockStockDataProvider implements StockDataProvider {
   }
 
   @Override
-  public KrxStockFinancialItem getStocksByStockId(String stockId) {
+  public StockInfo getStockById(String stockId) {
     StockScoreDto stock = stockMap.get(stockId);
     if (stock == null) {
       return null;
@@ -259,12 +258,14 @@ public class MockStockDataProvider implements StockDataProvider {
     // Mock 재무 데이터 생성 (점수에 따라 PER/PBR 결정)
     double per = stock.getScore() >= 70 ? 12.5 : (stock.getScore() >= 40 ? 18.0 : 25.0);
     double pbr = stock.getScore() >= 70 ? 1.2 : (stock.getScore() >= 40 ? 1.8 : 2.5);
-    return KrxStockFinancialItem.builder()
-        .stockCode(stock.getCode())
-        .stockName(stock.getName())
-        .closingPrice(stock.getPrice())
+    double changeRate = parseChangeRate(stock.getPriceChange());
+
+    return StockInfo.builder()
+        .code(stock.getCode())
+        .name(stock.getName())
+        .price(stock.getPrice())
         .priceChange(0)
-        .changeRate(parseChangeRate(stock.getPriceChange()))
+        .changeRate(changeRate)
         .eps(stock.getPrice() / per)
         .per(per)
         .bps(stock.getPrice() / pbr)
@@ -273,6 +274,7 @@ public class MockStockDataProvider implements StockDataProvider {
         .forwardPer(per * 0.9)
         .dividendPerShare((long) (stock.getPrice() * 0.02))
         .dividendYield(2.0)
+        .sectorName(stock.getSectorName())
         .build();
   }
 

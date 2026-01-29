@@ -106,36 +106,36 @@ public class StockInfo {
   }
 
   /**
-   * 재무 정보를 병합한 새 StockInfo 반환
+   * 다른 StockInfo에서 재무 정보를 병합한 새 StockInfo 반환
    *
-   * <p>재무 데이터(KrxStockFinancialItem)의 가격/등락률 정보를 우선 사용하여 Stock Detail 페이지와 일관성 유지
+   * <p>재무 정보를 가진 StockInfo의 가격/등락률/재무 데이터를 우선 사용하여 Stock Detail 페이지와 일관성 유지
    *
-   * @param financialItem KRX 재무지표 데이터
+   * @param financialInfo 재무 정보를 가진 StockInfo
    * @return 재무 정보가 병합된 StockInfo 객체
    */
-  public StockInfo withFinancialInfo(KrxStockFinancialItem financialItem) {
-    if (financialItem == null) {
+  public StockInfo mergeFinancialInfo(StockInfo financialInfo) {
+    if (financialInfo == null) {
       return this;
     }
     return StockInfo.builder()
         .code(this.code)
         .name(this.name)
         // 가격/등락률: 재무 데이터 우선 사용 (Stock Detail과 일관성 유지)
-        .price(financialItem.getClosingPrice())
-        .priceChange(financialItem.getPriceChange())
-        .changeRate(financialItem.getChangeRate())
+        .price(financialInfo.getPrice())
+        .priceChange(financialInfo.getPriceChange())
+        .changeRate(financialInfo.getChangeRate())
         .market(this.market)
         .sectorName(this.sectorName)
         .marketCap(this.marketCap)
         // 재무 정보 추가
-        .eps(financialItem.getEps())
-        .bps(financialItem.getBps())
-        .per(financialItem.getPer())
-        .pbr(financialItem.getPbr())
-        .forwardEps(financialItem.getForwardEps())
-        .forwardPer(financialItem.getForwardPer())
-        .dividendPerShare(financialItem.getDividendPerShare())
-        .dividendYield(financialItem.getDividendYield())
+        .eps(financialInfo.getEps())
+        .bps(financialInfo.getBps())
+        .per(financialInfo.getPer())
+        .pbr(financialInfo.getPbr())
+        .forwardEps(financialInfo.getForwardEps())
+        .forwardPer(financialInfo.getForwardPer())
+        .dividendPerShare(financialInfo.getDividendPerShare())
+        .dividendYield(financialInfo.getDividendYield())
         .build();
   }
 }

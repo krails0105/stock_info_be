@@ -2,7 +2,7 @@ package io.github.krails0105.stock_info_api.service;
 
 import io.github.krails0105.stock_info_api.dto.ScoreLabel;
 import io.github.krails0105.stock_info_api.dto.SectorScoreDto;
-import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockFinancialResponse.KrxStockFinancialItem;
+import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
 import io.github.krails0105.stock_info_api.dto.insight.InsightMeta;
 import io.github.krails0105.stock_info_api.dto.insight.InsightMeta.Source;
 import io.github.krails0105.stock_info_api.dto.insight.InsightNews;
@@ -54,22 +54,21 @@ public class InsightService {
    */
   public StockInsight getStockInsight(String stockCode) {
     // 기존 서비스에서 데이터 조회
-    KrxStockFinancialItem financialItem = stockService.getStockById(stockCode);
+    StockInfo stockInfo = stockService.getStockById(stockCode);
 
-    if (financialItem == null) {
+    if (stockInfo == null) {
       throw new IllegalArgumentException("Stock not found: " + stockCode);
     }
 
     // 섹터 통계 계산을 위해 같은 섹터 종목 조회
-    // 현재 KrxStockFinancialItem에는 sectorName이 없으므로 기본값 사용
-    String sectorName = "전체"; // TODO: 섹터 정보 연동 필요
+    String sectorName = stockInfo.getSectorName() != null ? stockInfo.getSectorName() : "전체";
     Map<String, Double> sectorMedians = calculateSectorMedians(sectorName);
 
     // 뉴스 조회
     List<NewsItem> newsItems = newsAggregatorService.getNewsByStockCode(stockCode);
 
     // StockSignals 생성
-    StockSignals signals = buildStockSignals(financialItem, sectorMedians, newsItems);
+    StockSignals signals = buildStockSignals(stockInfo, sectorMedians, newsItems);
 
     // RuleEngine으로 인사이트 생성
     return ruleEngineService.buildStockInsight(signals);
@@ -136,32 +135,24 @@ public class InsightService {
   // ==================== Private Methods ====================
 
   private StockSignals buildStockSignals(
-      KrxStockFinancialItem item, Map<String, Double> sectorMedians, List<NewsItem> newsItems) {
+      StockInfo stockInfo, Map<String, Double> sectorMedians, List<NewsItem> newsItems) {
 
-    double coverage = calculateCoverage(item);
-
-    // Convert primitive double to Double (wrapper) - use null for zero/missing values
-    Double per = item.getPer() > 0 ? item.getPer() : null;
-    Double pbr = item.getPbr() > 0 ? item.getPbr() : null;
-    Double forwardPer = item.getForwardPer() > 0 ? item.getForwardPer() : null;
-    Double eps = item.getEps() != 0 ? item.getEps() : null;
-    Double bps = item.getBps() != 0 ? item.getBps() : null;
-    Double dividendYield = item.getDividendYield() > 0 ? item.getDividendYield() : null;
+    double coverage = calculateCoverage(stockInfo);
 
     return StockSignals.builder()
-        .stockCode(item.getStockCode())
-        .stockName(item.getStockName())
-        .sectorName("전체") // TODO: 섹터 정보 연동
-        .market("KOSPI") // TODO: 시장 정보 연동
-        .price(item.getClosingPrice())
-        .priceChange(item.getPriceChange())
-        .changeRate(item.getChangeRate())
-        .per(per)
-        .pbr(pbr)
-        .forwardPer(forwardPer)
-        .eps(eps)
-        .bps(bps)
-        .dividendYield(dividendYield)
+        .stockCode(stockInfo.getCode())
+        .stockName(stockInfo.getName())
+        .sectorName(stockInfo.getSectorName() != null ? stockInfo.getSectorName() : "전체")
+        .market(stockInfo.getMarket() != null ? stockInfo.getMarket() : "KOSPI")
+        .price(stockInfo.getPrice())
+        .priceChange(stockInfo.getPriceChange())
+        .changeRate(stockInfo.getChangeRate())
+        .per(stockInfo.getPer())
+        .pbr(stockInfo.getPbr())
+        .forwardPer(stockInfo.getForwardPer())
+        .eps(stockInfo.getEps())
+        .bps(stockInfo.getBps())
+        .dividendYield(stockInfo.getDividendYield())
         .sectorMedianPer(sectorMedians.get("per"))
         .sectorMedianPbr(sectorMedians.get("pbr"))
         .sectorMedianRoe(sectorMedians.get("roe"))
@@ -169,24 +160,23 @@ public class InsightService {
         .dataCoverage(coverage)
         .isSuspended(false)
         .isAdministrative(false)
-        .hasDeficit(item.getPer() <= 0)
+        .hasDeficit(stockInfo.getPer() != null && stockInfo.getPer() <= 0)
         .newsItems(newsItems != null ? newsItems : List.of())
         .build();
   }
 
-  private double calculateCoverage(KrxStockFinancialItem item) {
+  private double calculateCoverage(StockInfo stockInfo) {
     int totalFields = 8;
     int presentFields = 0;
 
-    // primitive types use 0 as "missing" indicator
-    if (item.getPer() > 0) presentFields++;
-    if (item.getPbr() > 0) presentFields++;
-    if (item.getEps() != 0) presentFields++;
-    if (item.getBps() != 0) presentFields++;
-    if (item.getForwardPer() > 0) presentFields++;
-    if (item.getForwardEps() != 0) presentFields++;
-    if (item.getDividendYield() > 0) presentFields++;
-    if (item.getClosingPrice() > 0) presentFields++;
+    if (stockInfo.getPer() != null && stockInfo.getPer() > 0) presentFields++;
+    if (stockInfo.getPbr() != null && stockInfo.getPbr() > 0) presentFields++;
+    if (stockInfo.getEps() != null && stockInfo.getEps() != 0) presentFields++;
+    if (stockInfo.getBps() != null && stockInfo.getBps() != 0) presentFields++;
+    if (stockInfo.getForwardPer() != null && stockInfo.getForwardPer() > 0) presentFields++;
+    if (stockInfo.getForwardEps() != null && stockInfo.getForwardEps() != 0) presentFields++;
+    if (stockInfo.getDividendYield() != null && stockInfo.getDividendYield() > 0) presentFields++;
+    if (stockInfo.getPrice() > 0) presentFields++;
 
     return (double) presentFields / totalFields;
   }

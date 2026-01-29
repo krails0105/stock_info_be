@@ -1,6 +1,7 @@
 package io.github.krails0105.stock_info_api.dto.response;
 
 import io.github.krails0105.stock_info_api.dto.domain.Index;
+import io.github.krails0105.stock_info_api.util.FormatUtils;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -52,8 +53,8 @@ public class IndexResponse {
         .name(index.getName())
         .closingPrice(index.getClosingPrice())
         .priceChange(index.getPriceChange())
-        .changeRate(formatChangeRate(index.getChangeRate()))
-        .marketStatus(getMarketStatus(index.getChangeRate()))
+        .changeRate(FormatUtils.formatChangeRate(index.getChangeRate()))
+        .marketStatus(FormatUtils.getMarketStatus(index.getChangeRate()))
         .openingPrice(index.getOpeningPrice())
         .highPrice(index.getHighPrice())
         .lowPrice(index.getLowPrice())
@@ -61,15 +62,5 @@ public class IndexResponse {
         .tradingValue(index.getTradingValue())
         .marketCap(index.getMarketCap())
         .build();
-  }
-
-  private static String formatChangeRate(double rate) {
-    return String.format("%+.2f%%", rate);
-  }
-
-  private static String getMarketStatus(double changeRate) {
-    if (changeRate > 0) return "상승";
-    if (changeRate < 0) return "하락";
-    return "보합";
   }
 }

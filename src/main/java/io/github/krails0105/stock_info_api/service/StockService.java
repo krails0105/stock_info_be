@@ -3,7 +3,7 @@ package io.github.krails0105.stock_info_api.service;
 import io.github.krails0105.stock_info_api.dto.SectorScoreDto;
 import io.github.krails0105.stock_info_api.dto.StockListResponse;
 import io.github.krails0105.stock_info_api.dto.StockScoreDto;
-import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockFinancialResponse.KrxStockFinancialItem;
+import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
 import io.github.krails0105.stock_info_api.provider.SectorDataProvider;
 import io.github.krails0105.stock_info_api.provider.StockDataProvider;
 import java.util.Comparator;
@@ -45,8 +45,8 @@ public class StockService {
         .build();
   }
 
-  public KrxStockFinancialItem getStockById(String id) {
-    return stockDataProvider.getStocksByStockId(id);
+  public StockInfo getStockById(String id) {
+    return stockDataProvider.getStockById(id);
   }
 
   public StockScoreDto getStockByCode(String code) {

@@ -2,6 +2,7 @@ package io.github.krails0105.stock_info_api.dto.response;
 
 import io.github.krails0105.stock_info_api.dto.ScoreLabel;
 import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
+import io.github.krails0105.stock_info_api.util.FormatUtils;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
@@ -65,26 +66,9 @@ public class StockResponse {
   /** 분석 이유 (3줄) */
   private List<String> reasons;
 
-  private static String formatChangeRate(double rate) {
-    return String.format("%+.2f%%", rate);
-  }
-
-  private static String getReturnGrade(double changeRate) {
-    if (changeRate >= 3) return "높음";
-    if (changeRate >= 0) return "보통";
-    return "낮음";
-  }
-
-  private static String getValuationGrade(Double per, Double pbr) {
-    if (per == null || pbr == null) return "정보없음";
-    if (per > 0 && per < 10 && pbr < 1) return "저평가";
-    if (per > 30 || pbr > 3) return "고평가";
-    return "적정";
-  }
-
   /** StockInfo 도메인 객체에서 변환 */
   public static StockResponse fromStockInfo(StockInfo stockInfo) {
-    int score = calculateScore(stockInfo.getChangeRate());
+    int score = FormatUtils.calculateScoreFromChangeRate(stockInfo.getChangeRate());
     ScoreLabel label = ScoreLabel.fromScore(score);
     List<String> reasons = generateReasons(stockInfo);
 
@@ -92,7 +76,7 @@ public class StockResponse {
         .code(stockInfo.getCode())
         .name(stockInfo.getName())
         .price(stockInfo.getPrice())
-        .changeRate(formatChangeRate(stockInfo.getChangeRate()))
+        .changeRate(FormatUtils.formatChangeRate(stockInfo.getChangeRate()))
         .market(stockInfo.getMarket())
         .sectorName(stockInfo.getSectorName())
         .marketCap(stockInfo.getMarketCap() != null ? stockInfo.getMarketCap() : 0L)
@@ -101,17 +85,11 @@ public class StockResponse {
         .pbr(stockInfo.getPbr())
         .score(score)
         .label(label)
-        .returnGrade(getReturnGrade(stockInfo.getChangeRate()))
-        .valuationGrade(getValuationGrade(stockInfo.getPer(), stockInfo.getPbr()))
+        .returnGrade(FormatUtils.getReturnGrade(stockInfo.getChangeRate()))
+        .valuationGrade(FormatUtils.getValuationGrade(stockInfo.getPer(), stockInfo.getPbr()))
         .volumeGrade("보통")
         .reasons(reasons)
         .build();
-  }
-
-  /** 등락률 기반 점수 계산 (-5% ~ +5% 범위를 0~100점으로 매핑) */
-  private static int calculateScore(double changeRate) {
-    int score = (int) ((changeRate + 5) * 10);
-    return Math.max(0, Math.min(100, score));
   }
 
   /** StockInfo 기반 분석 이유 생성 */

@@ -3,7 +3,6 @@ package io.github.krails0105.stock_info_api.provider;
 import io.github.krails0105.stock_info_api.dto.StockScoreDto;
 import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
 import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockFinancialResponse;
-import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockFinancialResponse.KrxStockFinancialItem;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
@@ -32,12 +31,13 @@ public class KrxStockDataProviderImpl implements StockDataProvider {
   }
 
   @Override
-  public KrxStockFinancialItem getStocksByStockId(String stockId) {
+  public StockInfo getStockById(String stockId) {
     KrxStockFinancialResponse krxResponse = fetchKrxStockData();
     log.debug("Stock found: {}", krxResponse);
     return krxResponse.getItems().stream()
         .filter(s -> s.getStockCode().equals(stockId))
         .findFirst()
+        .map(StockInfo::fromKrxFinancialItem)
         .orElse(null);
   }
 
