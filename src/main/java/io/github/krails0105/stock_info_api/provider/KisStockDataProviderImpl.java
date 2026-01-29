@@ -1,11 +1,14 @@
 package io.github.krails0105.stock_info_api.provider;
 
+import static io.github.krails0105.stock_info_api.util.FormatUtils.calculateScoreFromChangeRate;
+import static io.github.krails0105.stock_info_api.util.FormatUtils.formatChangeRate;
+import static io.github.krails0105.stock_info_api.util.FormatUtils.getReturnGrade;
+
 import io.github.krails0105.stock_info_api.config.KisRestClientProperties;
 import io.github.krails0105.stock_info_api.dto.ScoreLabel;
 import io.github.krails0105.stock_info_api.dto.StockScoreDto;
 import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
 import io.github.krails0105.stock_info_api.dto.external.kis.KisStockPriceResponse;
-import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockFinancialResponse.KrxStockFinancialItem;
 import io.github.krails0105.stock_info_api.service.KisTokenService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -90,10 +93,10 @@ public class KisStockDataProviderImpl implements StockDataProvider {
     double changeRate = parseDouble(output.getPriceChangeRate());
 
     // 점수 계산 (등락률 기반 간단 계산)
-    int score = calculateScore(changeRate);
+    int score = calculateScoreFromChangeRate(changeRate);
     ScoreLabel label = ScoreLabel.fromScore(score);
 
-    String priceChangeStr = formatPriceChange(changeRate);
+    String priceChangeStr = formatChangeRate(changeRate);
 
     return StockScoreDto.builder()
         .code(code)
@@ -103,7 +106,7 @@ public class KisStockDataProviderImpl implements StockDataProvider {
         .price(price)
         .priceChange(priceChangeStr)
         .returnGrade(getReturnGrade(changeRate))
-        .valuationGrade(getValuationGrade(output.getPer(), output.getPbr()))
+        .valuationGrade(getValuationGradeFromString(output.getPer(), output.getPbr()))
         .volumeGrade(getVolumeGrade(output.getAccumulatedVolume(), output.getPreviousVolume()))
         .reasons(
             List.of(
@@ -113,23 +116,7 @@ public class KisStockDataProviderImpl implements StockDataProvider {
         .build();
   }
 
-  private int calculateScore(double changeRate) {
-    // 등락률 기반 점수: -5% ~ +5% 범위를 0~100점으로 매핑
-    int score = (int) ((changeRate + 5) * 10);
-    return Math.max(0, Math.min(100, score));
-  }
-
-  private String formatPriceChange(double changeRate) {
-    return String.format("%+.2f%%", changeRate);
-  }
-
-  private String getReturnGrade(double changeRate) {
-    if (changeRate >= 3) return "높음";
-    if (changeRate >= 0) return "보통";
-    return "낮음";
-  }
-
-  private String getValuationGrade(String perStr, String pbrStr) {
+  private String getValuationGradeFromString(String perStr, String pbrStr) {
     double per = parseDouble(perStr);
     double pbr = parseDouble(pbrStr);
 
@@ -175,7 +162,7 @@ public class KisStockDataProviderImpl implements StockDataProvider {
   }
 
   @Override
-  public KrxStockFinancialItem getStocksByStockId(String stockId) {
+  public StockInfo getStockById(String stockId) {
     return null;
   }
 

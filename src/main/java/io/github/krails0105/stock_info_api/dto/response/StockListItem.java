@@ -1,5 +1,8 @@
 package io.github.krails0105.stock_info_api.dto.response;
 
+import static io.github.krails0105.stock_info_api.util.FormatUtils.calculateScoreFromChangeRate;
+import static io.github.krails0105.stock_info_api.util.FormatUtils.formatChangeRate;
+
 import io.github.krails0105.stock_info_api.dto.ScoreLabel;
 import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
 import lombok.Builder;
@@ -52,7 +55,7 @@ public class StockListItem {
 
   /** StockInfo 도메인 객체에서 변환 */
   public static StockListItem fromStockInfo(StockInfo stockInfo) {
-    int score = calculateScore(stockInfo.getChangeRate());
+    int score = calculateScoreFromChangeRate(stockInfo.getChangeRate());
     ScoreLabel label = ScoreLabel.fromScore(score);
 
     return StockListItem.builder()
@@ -69,14 +72,5 @@ public class StockListItem {
         .market(stockInfo.getMarket())
         .sectorName(stockInfo.getSectorName())
         .build();
-  }
-
-  private static String formatChangeRate(double rate) {
-    return String.format("%+.2f%%", rate);
-  }
-
-  private static int calculateScore(double changeRate) {
-    int score = (int) ((changeRate + 5) * 10);
-    return Math.max(0, Math.min(100, score));
   }
 }

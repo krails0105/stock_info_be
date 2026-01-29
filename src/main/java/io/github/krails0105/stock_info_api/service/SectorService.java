@@ -6,7 +6,6 @@ import io.github.krails0105.stock_info_api.dto.ScoreLabel;
 import io.github.krails0105.stock_info_api.dto.ScoreboardResponse;
 import io.github.krails0105.stock_info_api.dto.SectorScoreDto;
 import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
-import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockFinancialResponse.KrxStockFinancialItem;
 import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockResponse.KrxStockItem;
 import io.github.krails0105.stock_info_api.dto.response.StockListItem;
 import io.github.krails0105.stock_info_api.provider.SectorDataProvider;
@@ -83,10 +82,9 @@ public class SectorService {
               StockInfo stockInfo = StockInfo.fromKrxStockItem(item);
               // 재무 정보 조회 및 병합
               try {
-                KrxStockFinancialItem financialItem =
-                    stockDataProvider.getStocksByStockId(item.getStockCode());
-                if (financialItem != null) {
-                  stockInfo = stockInfo.withFinancialInfo(financialItem);
+                StockInfo financialInfo = stockDataProvider.getStockById(item.getStockCode());
+                if (financialInfo != null) {
+                  stockInfo = stockInfo.mergeFinancialInfo(financialInfo);
                 }
               } catch (Exception e) {
                 log.debug("재무 정보 조회 실패: {} - {}", item.getStockCode(), e.getMessage());
