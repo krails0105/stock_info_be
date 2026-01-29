@@ -3,6 +3,7 @@ package io.github.krails0105.stock_info_api.controller;
 import io.github.krails0105.stock_info_api.dto.StockListResponse;
 import io.github.krails0105.stock_info_api.dto.StockScoreDto;
 import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
+import io.github.krails0105.stock_info_api.dto.response.ChartResponse;
 import io.github.krails0105.stock_info_api.dto.response.StockResponse;
 import io.github.krails0105.stock_info_api.service.StockService;
 import java.util.List;
@@ -57,5 +58,14 @@ public class StockController {
   public List<StockScoreDto> getTopStocks(@RequestParam(defaultValue = "10") int limit) {
     log.info("Request to get top {} stocks", limit);
     return stockService.getTopStocks(limit);
+  }
+
+  /** 종목 차트 데이터 조회 */
+  @GetMapping("/{code}/chart")
+  public ResponseEntity<ChartResponse> getStockChart(
+      @PathVariable String code, @RequestParam(defaultValue = "1M") String range) {
+    log.info("Request to get chart for stock: {}, range: {}", code, range);
+    ChartResponse response = stockService.getStockChart(code, range);
+    return ResponseEntity.ok(response);
   }
 }

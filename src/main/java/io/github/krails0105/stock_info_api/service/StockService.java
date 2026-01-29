@@ -4,6 +4,8 @@ import io.github.krails0105.stock_info_api.dto.SectorScoreDto;
 import io.github.krails0105.stock_info_api.dto.StockListResponse;
 import io.github.krails0105.stock_info_api.dto.StockScoreDto;
 import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
+import io.github.krails0105.stock_info_api.dto.response.ChartResponse;
+import io.github.krails0105.stock_info_api.provider.ChartDataProvider;
 import io.github.krails0105.stock_info_api.provider.SectorDataProvider;
 import io.github.krails0105.stock_info_api.provider.StockDataProvider;
 import java.util.Comparator;
@@ -17,6 +19,7 @@ public class StockService {
 
   private final StockDataProvider stockDataProvider;
   private final SectorDataProvider sectorDataProvider;
+  private final ChartDataProvider chartDataProvider;
 
   public StockListResponse getStocksBySector(String sectorId) {
     // 섹터 정보 조회 (getAllSectors에서 필터링)
@@ -66,5 +69,9 @@ public class StockService {
         .sorted(Comparator.comparingInt(StockScoreDto::getScore).reversed())
         .limit(limit)
         .toList();
+  }
+
+  public ChartResponse getStockChart(String stockCode, String range) {
+    return chartDataProvider.getChartData(stockCode, range);
   }
 }
