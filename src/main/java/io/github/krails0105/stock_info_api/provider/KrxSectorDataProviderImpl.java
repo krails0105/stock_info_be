@@ -5,14 +5,18 @@ import io.github.krails0105.stock_info_api.dto.SectorScoreDto;
 import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
 import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockResponse;
 import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockResponse.KrxStockItem;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.ClientHttpRequestFactorySettings;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -23,10 +27,20 @@ import org.springframework.web.client.RestClient;
 @Slf4j
 public class KrxSectorDataProviderImpl implements SectorDataProvider {
 
+  private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+  private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
+
   private final RestClient restClient;
 
   public KrxSectorDataProviderImpl() {
-    this.restClient = RestClient.builder().build();
+    ClientHttpRequestFactorySettings settings =
+        ClientHttpRequestFactorySettings.defaults()
+            .withConnectTimeout(CONNECT_TIMEOUT)
+            .withReadTimeout(READ_TIMEOUT);
+    ClientHttpRequestFactory requestFactory =
+        ClientHttpRequestFactoryBuilder.detect().build(settings);
+
+    this.restClient = RestClient.builder().requestFactory(requestFactory).build();
   }
 
   @Override

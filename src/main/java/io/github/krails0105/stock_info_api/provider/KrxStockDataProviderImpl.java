@@ -3,11 +3,15 @@ package io.github.krails0105.stock_info_api.provider;
 import io.github.krails0105.stock_info_api.dto.StockScoreDto;
 import io.github.krails0105.stock_info_api.dto.domain.StockInfo;
 import io.github.krails0105.stock_info_api.dto.external.krx.KrxStockFinancialResponse;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.ClientHttpRequestFactorySettings;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -18,10 +22,20 @@ import org.springframework.web.client.RestClient;
 @Slf4j
 public class KrxStockDataProviderImpl implements StockDataProvider {
 
+  private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+  private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
+
   private final RestClient restClient;
 
   public KrxStockDataProviderImpl() {
-    this.restClient = RestClient.builder().build();
+    ClientHttpRequestFactorySettings settings =
+        ClientHttpRequestFactorySettings.defaults()
+            .withConnectTimeout(CONNECT_TIMEOUT)
+            .withReadTimeout(READ_TIMEOUT);
+    ClientHttpRequestFactory requestFactory =
+        ClientHttpRequestFactoryBuilder.detect().build(settings);
+
+    this.restClient = RestClient.builder().requestFactory(requestFactory).build();
   }
 
   @Override
