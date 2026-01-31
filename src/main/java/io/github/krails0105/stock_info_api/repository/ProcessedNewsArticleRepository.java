@@ -97,4 +97,60 @@ public interface ProcessedNewsArticleRepository extends JpaRepository<ProcessedN
    * @return 존재 여부
    */
   boolean existsByRawArticleId(Long rawArticleId);
+
+  /**
+   * 종목별 뉴스 개수 조회 (특정 시점 이후).
+   *
+   * @param stockCode 종목 코드
+   * @param after 조회 시작 시점
+   * @return 뉴스 개수
+   */
+  @Query(
+      "SELECT COUNT(p) FROM ProcessedNewsArticle p "
+          + "WHERE p.stockCode = :stockCode "
+          + "AND p.publishedAt > :after "
+          + "AND p.isClusterRepresentative = true")
+  long countByStockCodeSince(
+      @Param("stockCode") String stockCode, @Param("after") LocalDateTime after);
+
+  /**
+   * 섹터별 뉴스 개수 조회 (특정 시점 이후).
+   *
+   * @param sectorName 섹터명
+   * @param after 조회 시작 시점
+   * @return 뉴스 개수
+   */
+  @Query(
+      "SELECT COUNT(p) FROM ProcessedNewsArticle p "
+          + "WHERE p.sectorName = :sectorName "
+          + "AND p.publishedAt > :after "
+          + "AND p.isClusterRepresentative = true")
+  long countBySectorNameSince(
+      @Param("sectorName") String sectorName, @Param("after") LocalDateTime after);
+
+  /**
+   * 뉴스가 있는 종목 코드 목록 조회 (특정 시점 이후).
+   *
+   * @param after 조회 시작 시점
+   * @return 종목 코드 목록
+   */
+  @Query(
+      "SELECT DISTINCT p.stockCode FROM ProcessedNewsArticle p "
+          + "WHERE p.stockCode IS NOT NULL "
+          + "AND p.publishedAt > :after "
+          + "AND p.isClusterRepresentative = true")
+  List<String> findDistinctStockCodesWithNews(@Param("after") LocalDateTime after);
+
+  /**
+   * 뉴스가 있는 섹터명 목록 조회 (특정 시점 이후).
+   *
+   * @param after 조회 시작 시점
+   * @return 섹터명 목록
+   */
+  @Query(
+      "SELECT DISTINCT p.sectorName FROM ProcessedNewsArticle p "
+          + "WHERE p.sectorName IS NOT NULL "
+          + "AND p.publishedAt > :after "
+          + "AND p.isClusterRepresentative = true")
+  List<String> findDistinctSectorNamesWithNews(@Param("after") LocalDateTime after);
 }

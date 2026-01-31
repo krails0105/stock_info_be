@@ -82,68 +82,141 @@ public class NewsTaggerService {
   /** 6자리 주식 코드 패턴. */
   private static final Pattern STOCK_CODE_PATTERN = Pattern.compile("\\b(\\d{6})\\b");
 
-  /** 섹터명 키워드 매핑 (KRX 업종명 기준). */
+  /** 섹터명 키워드 매핑 (KRX 업종명 기준) - 확장 버전. */
   private static final Map<String, List<String>> SECTOR_KEYWORDS =
       Map.ofEntries(
-          Map.entry("전기·전자", List.of("반도체", "메모리", "파운드리", "HBM", "D램", "낸드", "전자")),
-          Map.entry("운송장비·부품", List.of("자동차", "전기차", "EV", "완성차", "현대차", "기아")),
-          Map.entry("제약", List.of("바이오", "제약", "신약", "임상", "의약")),
-          Map.entry("은행", List.of("은행", "금융")),
-          Map.entry("증권", List.of("증권사", "자산운용")),
-          Map.entry("보험", List.of("보험")),
-          Map.entry("IT 서비스", List.of("AI", "인공지능", "소프트웨어", "클라우드", "플랫폼", "게임")),
-          Map.entry("전기·가스", List.of("에너지", "태양광", "풍력", "친환경", "2차전지", "배터리")),
-          Map.entry("화학", List.of("석유", "정유", "화학", "리튬", "양극재")),
-          Map.entry("기계·장비", List.of("조선업", "선박", "HD현대중공업", "한화오션", "기계")),
-          Map.entry("금속", List.of("철강", "포스코", "금속")),
-          Map.entry("통신", List.of("통신", "5G")),
-          Map.entry("유통", List.of("유통", "소비재", "화장품", "백화점", "이커머스")));
+          Map.entry(
+              "전기·전자",
+              List.of(
+                  "반도체", "메모리", "파운드리", "HBM", "D램", "낸드", "전자", "디스플레이", "OLED", "LCD", "AP",
+                  "시스템반도체", "비메모리", "DDR5", "GPU")),
+          Map.entry(
+              "운송장비·부품",
+              List.of(
+                  "자동차", "전기차", "EV", "완성차", "현대차", "기아", "자율주행", "배터리팩", "모빌리티", "수소차", "하이브리드",
+                  "전장부품")),
+          Map.entry(
+              "제약",
+              List.of(
+                  "바이오", "제약", "신약", "임상", "의약", "헬스케어", "CMO", "CDMO", "mRNA", "세포치료제", "항암제",
+                  "면역항암", "바이오시밀러")),
+          Map.entry("은행", List.of("은행", "금융", "대출", "예금", "저축", "금리", "여신", "수신")),
+          Map.entry("증권", List.of("증권사", "자산운용", "투자", "펀드", "IB", "IPO", "유상증자", "공모주")),
+          Map.entry("보험", List.of("보험", "생명보험", "손해보험", "재보험", "보험료")),
+          Map.entry(
+              "IT 서비스",
+              List.of(
+                  "AI", "인공지능", "소프트웨어", "클라우드", "플랫폼", "게임", "챗GPT", "LLM", "데이터센터", "SaaS", "핀테크",
+                  "메타버스", "IT서비스")),
+          Map.entry(
+              "전기·가스",
+              List.of(
+                  "에너지", "태양광", "풍력", "친환경", "2차전지", "배터리", "ESS", "신재생", "탄소중립", "수소", "연료전지",
+                  "전력")),
+          Map.entry(
+              "화학",
+              List.of("석유", "정유", "화학", "리튬", "양극재", "음극재", "전해액", "분리막", "석유화학", "NCC", "에틸렌")),
+          Map.entry(
+              "기계·장비",
+              List.of(
+                  "조선업", "선박", "HD현대중공업", "한화오션", "기계", "삼성중공업", "LNG선", "컨테이너선", "방산", "항공우주",
+                  "로봇")),
+          Map.entry("금속", List.of("철강", "포스코", "금속", "비철금속", "알루미늄", "구리", "희토류")),
+          Map.entry("통신", List.of("통신", "5G", "6G", "이통사", "KT", "SKT", "LGU+", "네트워크")),
+          Map.entry(
+              "유통",
+              List.of(
+                  "유통", "소비재", "화장품", "백화점", "이커머스", "쿠팡", "네이버쇼핑", "편의점", "마트", "K뷰티", "면세점")));
 
-  /** 주요 종목명 → 종목코드 매핑 (시총 상위 종목 + 주요 관심 종목). */
+  /** 주요 종목명 → 종목코드 매핑 (시총 상위 종목 + 주요 관심 종목) - 확장 버전. */
   private static final Map<String, String> STOCK_NAME_CODE_MAP =
       Map.ofEntries(
           // 시총 상위 종목
           Map.entry("삼성전자", "005930"),
+          Map.entry("삼성", "005930"),
           Map.entry("SK하이닉스", "000660"),
           Map.entry("하이닉스", "000660"),
           Map.entry("LG에너지솔루션", "373220"),
+          Map.entry("LG엔솔", "373220"),
           Map.entry("삼성바이오로직스", "207940"),
           Map.entry("삼성바이오", "207940"),
           Map.entry("현대차", "005380"),
           Map.entry("현대자동차", "005380"),
           Map.entry("기아", "000270"),
+          Map.entry("기아차", "000270"),
           Map.entry("셀트리온", "068270"),
           Map.entry("KB금융", "105560"),
+          Map.entry("KB금융지주", "105560"),
           Map.entry("신한지주", "055550"),
+          Map.entry("신한금융", "055550"),
           Map.entry("NAVER", "035420"),
           Map.entry("네이버", "035420"),
           Map.entry("카카오", "035720"),
           Map.entry("포스코홀딩스", "005490"),
           Map.entry("포스코", "005490"),
+          Map.entry("POSCO", "005490"),
           Map.entry("현대모비스", "012330"),
           Map.entry("LG화학", "051910"),
           Map.entry("삼성SDI", "006400"),
           Map.entry("SK이노베이션", "096770"),
+          Map.entry("SK이노", "096770"),
           Map.entry("삼성물산", "028260"),
           Map.entry("하나금융지주", "086790"),
+          Map.entry("하나금융", "086790"),
           Map.entry("삼성생명", "032830"),
           Map.entry("LG전자", "066570"),
           Map.entry("SK텔레콤", "017670"),
+          Map.entry("SKT", "017670"),
           Map.entry("KT", "030200"),
+          Map.entry("케이티", "030200"),
           Map.entry("SK", "034730"),
           Map.entry("두산에너빌리티", "034020"),
+          Map.entry("두산에너", "034020"),
           Map.entry("한화에어로스페이스", "012450"),
+          Map.entry("한화에어로", "012450"),
           Map.entry("크래프톤", "259960"),
           Map.entry("HD현대중공업", "329180"),
+          Map.entry("현대중공업", "329180"),
           Map.entry("엔씨소프트", "036570"),
+          Map.entry("NC소프트", "036570"),
           Map.entry("넷마블", "251270"),
           Map.entry("카카오뱅크", "323410"),
           Map.entry("SK바이오팜", "326030"),
           Map.entry("LG생활건강", "051900"),
           Map.entry("아모레퍼시픽", "090430"),
+          Map.entry("아모레", "090430"),
           Map.entry("HLB", "028300"),
           Map.entry("에코프로비엠", "247540"),
-          Map.entry("에코프로", "086520"));
+          Map.entry("에코프로BM", "247540"),
+          Map.entry("에코프로", "086520"),
+          // 추가 종목 (시총 상위 확대)
+          Map.entry("삼성화재", "000810"),
+          Map.entry("우리금융지주", "316140"),
+          Map.entry("우리금융", "316140"),
+          Map.entry("LG", "003550"),
+          Map.entry("한화솔루션", "009830"),
+          Map.entry("삼성에스디에스", "018260"),
+          Map.entry("삼성SDS", "018260"),
+          Map.entry("한국전력", "015760"),
+          Map.entry("한전", "015760"),
+          Map.entry("삼성전기", "009150"),
+          Map.entry("SK스퀘어", "402340"),
+          Map.entry("HD한국조선해양", "009540"),
+          Map.entry("한국조선해양", "009540"),
+          Map.entry("한화오션", "042660"),
+          Map.entry("삼성중공업", "010140"),
+          Map.entry("LG이노텍", "011070"),
+          Map.entry("SK온", "361610"),
+          Map.entry("카카오페이", "377300"),
+          Map.entry("토스뱅크", "024110"),
+          Map.entry("대한항공", "003490"),
+          Map.entry("SK네트웍스", "001740"),
+          Map.entry("CJ제일제당", "097950"),
+          Map.entry("CJ", "001040"),
+          Map.entry("한미약품", "128940"),
+          Map.entry("유한양행", "000100"),
+          Map.entry("녹십자", "006280"),
+          Map.entry("SK바이오사이언스", "302440"));
 
   /**
    * 뉴스에 태그를 부여한다.
