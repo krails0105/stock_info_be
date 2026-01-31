@@ -59,7 +59,9 @@ Controller → Service → Provider (Data Access) → DTO
 
 **Providers** (`provider/`): Data access abstraction using Strategy pattern
 - `SectorDataProvider` / `StockDataProvider` / `IndexDataProvider`: Interfaces for data sources
-- `ChartDataProvider`: 차트 데이터 인터페이스 (MockChartDataProvider, KrxChartDataProvider)
+- `ChartDataProvider`: 차트 데이터 인터페이스
+  - `MockChartDataProvider`: Mock 데이터 (`@Profile("local")`)
+  - `KrxChartDataProvider`: 네이버 차트 API 연동 (`@Profile("prod")`, Caffeine 캐시 적용)
 - `MockSectorDataProvider` / `MockStockDataProvider`: Development implementations (`@Profile("local")`)
 - `KrxStockDataProviderImpl`: KRX API integration
 - `KrxIndexDataProviderImpl`: KRX 지수 API (INDEX_CODES Map으로 관리)
@@ -113,6 +115,12 @@ External API/DB → Provider → Service → Controller → Client
 
 **IndexController:**
 - `GET /api/indexes` - 시장 지수 조회 (코스피, 코스닥)
+
+**StockController (차트):**
+- `GET /api/stocks/{code}/chart?range=1M` - 종목 차트 (1D/1W/1M/3M/1Y)
+
+**NewsCoverageController:**
+- `GET /api/news/coverage` - 뉴스 커버리지 현황 (운영 모니터링용)
 
 ### Scoring System
 
