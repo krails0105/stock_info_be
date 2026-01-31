@@ -6,6 +6,7 @@ import io.github.krails0105.stock_info_api.dto.external.naver.NaverChartResponse
 import io.github.krails0105.stock_info_api.dto.response.ChartResponse;
 import io.github.krails0105.stock_info_api.dto.response.ChartResponse.ChartDataPoint;
 import io.github.krails0105.stock_info_api.dto.response.ChartResponse.ChartMeta;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -15,9 +16,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.ClientHttpRequestFactorySettings;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -58,18 +62,33 @@ public class KrxChartDataProvider implements ChartDataProvider {
           Map.entry("032830", "삼성생명"),
           Map.entry("066570", "LG전자"));
 
+  private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+  private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
+
   private final RestClient restClient;
 
   public KrxChartDataProvider() {
+    // Timeout 설정
+    ClientHttpRequestFactorySettings settings =
+        ClientHttpRequestFactorySettings.defaults()
+            .withConnectTimeout(CONNECT_TIMEOUT)
+            .withReadTimeout(READ_TIMEOUT);
+    ClientHttpRequestFactory requestFactory =
+        ClientHttpRequestFactoryBuilder.detect().build(settings);
+
     this.restClient =
         RestClient.builder()
+            .requestFactory(requestFactory)
             .defaultHeader("User-Agent", "Mozilla/5.0")
             .defaultHeader("Referer", "https://finance.naver.com")
             .build();
   }
 
   @Override
-  @Cacheable(value = CacheConfig.CHART_CACHE, key = "#stockCode + '_' + #range")
+  @Cacheable(
+      value = CacheConfig.CHART_CACHE,
+      key = "#stockCode + '_' + #range",
+      unless = "#result.dataPoints.isEmpty()") // 빈 응답은 캐시하지 않음
   public ChartResponse getChartData(String stockCode, String range) {
     log.debug("Fetching chart data from Naver API: code={}, range={}", stockCode, range);
 
